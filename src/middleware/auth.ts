@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../lib/firebase-admin.ts';
-import { db } from '../db/index.ts';
+import { db, isPostgresConfigured } from '../db/index.ts';
 import { users } from '../db/schema.ts';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { dataStore } from '../lib/dataStore.ts';
 
 const AUTH_SECRET = process.env.AUTH_SECRET || 'vastu-ritam-super-secret-key-2026';
 
@@ -77,22 +78,36 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   // 1. Try internal session token
   const sessionData = verifySessionToken(token);
   if (sessionData) {
-    try {
-      const dbUser = await db.select().from(users).where(eq(users.id, sessionData.id)).limit(1);
-      if (dbUser.length > 0) {
-        req.user = {
-          id: dbUser[0].id,
-          uid: dbUser[0].uid,
-          email: dbUser[0].email,
-          displayName: dbUser[0].displayName,
-          role: dbUser[0].role,
-          avatarUrl: dbUser[0].avatarUrl,
-        };
-        return next();
+    if (isPostgresConfigured) {
+      try {
+        const dbUser = await db.select().from(users).where(eq(users.id, sessionData.id)).limit(1);
+        if (dbUser.length > 0) {
+          req.user = {
+            id: dbUser[0].id,
+            uid: dbUser[0].uid,
+            email: dbUser[0].email,
+            displayName: dbUser[0].displayName,
+            role: dbUser[0].role,
+            avatarUrl: dbUser[0].avatarUrl,
+          };
+          return next();
+        }
+      } catch (err) {
+        console.warn('Postgres session lookup notice (falling back to dataStore):', err);
       }
-    } catch (err) {
-      console.error('Session lookup error:', err);
     }
+
+    // Fallback: Verify via local dataStore or HMAC-verified sessionData payload
+    const dsUser = dataStore.getUserById(sessionData.id);
+    req.user = {
+      id: sessionData.id,
+      uid: sessionData.uid,
+      email: sessionData.email,
+      displayName: dsUser?.displayName || 'Vastu Ritam Acharya',
+      role: sessionData.role || dsUser?.role || 'admin',
+      avatarUrl: dsUser?.avatarUrl || '/trademark-logo.jpg',
+    };
+    return next();
   }
 
   // 2. Try Firebase ID Token

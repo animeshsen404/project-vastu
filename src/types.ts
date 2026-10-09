@@ -3,7 +3,6 @@ export type PageType =
   | 'discover'
   | 'what-we-do'
   | 'gyan-kosh'
-  | 'compass'
   | 'testimonials'
   | 'contact'
   | 'admin'

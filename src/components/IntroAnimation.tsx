@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, ArrowRight, Volume2, VolumeX, X } from 'lucide-react';
 import { BrandName } from './BrandName';
 import { PageType } from '../types';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 interface IntroAnimationProps {
   onComplete: (targetPage?: PageType) => void;
 }
 
 export const IntroAnimation: React.FC<IntroAnimationProps> = ({ onComplete }) => {
+  const { logoUrl } = useSiteSettings();
   // Stages of the Heavenly Entry:
   // 0: Initial Cosmic Void & Golden Dawn (0ms)
   // 1: Heavenly Sanctuary Portal Appears with God-Rays (300ms)
@@ -340,7 +342,7 @@ export const IntroAnimation: React.FC<IntroAnimationProps> = ({ onComplete }) =>
           {/* Sacred Medallion Disc */}
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#FAF7F2] p-1.5 shadow-[0_0_50px_rgba(245,158,11,0.6)] ring-2 sm:ring-4 ring-[#D4A72C] flex items-center justify-center overflow-hidden">
             <img
-              src="/vastu-emblem-square.png"
+              src={logoUrl || "/vastu-emblem-square.png"}
               alt="Vastu Ritam Sacred Emblem"
               className="w-full h-full object-contain rounded-full"
               onError={(e) => {

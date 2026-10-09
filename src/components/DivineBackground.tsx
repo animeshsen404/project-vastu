@@ -304,7 +304,7 @@ export const DivineBackground: React.FC<DivineBackgroundProps> = ({
           ========================================================================= */}
       <aside
         aria-label="Ritam Ambience & Sacred Atmosphere Shrine"
-        className="fixed bottom-3 right-3 sm:bottom-5 sm:right-6 pointer-events-auto z-40"
+        className="fixed bottom-3 right-3 sm:bottom-5 sm:right-6 pointer-events-auto z-40 max-w-[calc(100vw-24px)]"
       >
         <div
           className={`flex items-center gap-2 sm:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-all duration-300 backdrop-blur-xl shadow-xl select-none ${

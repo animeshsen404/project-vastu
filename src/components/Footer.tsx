@@ -168,10 +168,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
               <li>
                 <button
-                  onClick={() => onNavigate('compass')}
+                  onClick={() => onNavigate('knowledge')}
                   className="transition-colors cursor-pointer hover:text-[var(--color-primary)]"
                 >
-                  Sacred Vastu Compass
+                  Canonical Treatises
                 </button>
               </li>
               <li>

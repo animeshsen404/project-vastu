@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { BrandName } from './BrandName';
 
 interface VastuRitamLogoProps {
@@ -7,6 +8,8 @@ interface VastuRitamLogoProps {
   size?: number | string;
   variant?: 'emblem' | 'full' | 'horizontal';
   showText?: boolean;
+  showSubtitle?: boolean;
+  customLogoUrl?: string;
 }
 
 /**
@@ -156,20 +159,36 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
   size = 46,
   variant = 'horizontal',
   showText = true,
+  showSubtitle = true,
+  customLogoUrl,
 }) => {
   const { isLight } = useTheme();
+  const { logoUrl } = useSiteSettings();
   const numSize = typeof size === 'number' ? size : parseInt(size as string, 10) || 46;
 
-  // Primary image paths with automatic failover chain
-  const imageSources = [
-    '/vastu-emblem-square.png',
-    '/trademark-logo.jpg',
-    '/emblem.jpg',
-    '/vastu-ritam-logo.jpg',
-  ];
+  const activeLogo = customLogoUrl || logoUrl;
+  const isCustomLogoActive = Boolean(activeLogo && activeLogo !== '/trademark-logo.jpg' && activeLogo !== '/vastu-emblem-square.png');
+
+  // Primary image paths with dynamic configured logo as top priority
+  const imageSources = Array.from(
+    new Set(
+      [
+        activeLogo,
+        '/trademark-logo.jpg',
+        '/vastu-emblem-square.png',
+        '/emblem.jpg',
+        '/vastu-ritam-logo.jpg',
+      ].filter(Boolean) as string[]
+    )
+  );
 
   const [currentSourceIndex, setCurrentSourceIndex] = useState<number>(0);
   const [allImagesFailed, setAllImagesFailed] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCurrentSourceIndex(0);
+    setAllImagesFailed(false);
+  }, [activeLogo]);
 
   const handleImageError = () => {
     if (currentSourceIndex < imageSources.length - 1) {
@@ -179,18 +198,18 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
     }
   };
 
-  // 1. Emblem Only Variant (Clean Circular Medallion)
+  // 1. Emblem Only Variant (Clean Protective Medallion)
   if (variant === 'emblem') {
     return (
       <div
         style={{ width: numSize, height: numSize }}
-        className={`relative shrink-0 select-none overflow-hidden rounded-full bg-white shadow-md ring-2 ring-[var(--color-primary,#C51E28)] p-0.5 flex items-center justify-center transition-all duration-300 hover:ring-[var(--color-accent-orange,#F97316)] hover:scale-105 ${className}`}
+        className={`relative shrink-0 select-none overflow-hidden rounded-2xl sm:rounded-full bg-white shadow-md ring-2 ring-[var(--color-primary,#C51E28)] p-1 flex items-center justify-center transition-all duration-300 hover:ring-[var(--color-accent-orange,#F97316)] hover:scale-105 ${className}`}
       >
         {!allImagesFailed ? (
           <img
             src={imageSources[currentSourceIndex]}
-            alt="Vastu Ritam Official Emblem"
-            className="w-full h-full object-contain rounded-full"
+            alt="Website Logo Emblem"
+            className="max-h-full max-w-full w-auto h-auto object-contain rounded-xl sm:rounded-full"
             onError={handleImageError}
           />
         ) : (
@@ -210,9 +229,9 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
         >
           {!allImagesFailed ? (
             <img
-              src="/trademark-logo.jpg"
-              alt="Vastu Ritam Official Registered Trademark Logo"
-              className="w-full h-full object-contain rounded-2xl"
+              src={imageSources[currentSourceIndex]}
+              alt="Website Logo Full Lockup"
+              className="max-h-full max-w-full w-auto h-auto object-contain rounded-2xl"
               onError={handleImageError}
             />
           ) : (
@@ -233,17 +252,25 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
 
   // 3. Horizontal Header / Navbar Variant
   return (
-    <div className={`flex items-center gap-3 select-none min-w-0 ${className}`}>
-      {/* Crisp Circular Emblem Medallion */}
+    <div className={`flex items-center gap-2.5 sm:gap-3 select-none min-w-0 ${className}`}>
+      {/* Brand Logo Container with Aspect Ratio Preservation */}
       <div
-        style={{ width: numSize, height: numSize }}
-        className="relative shrink-0 rounded-full bg-white shadow-sm ring-1.5 ring-[var(--color-primary,#C51E28)] group-hover:ring-[var(--color-accent-orange,#F97316)] p-0.5 flex items-center justify-center transition-all duration-300 overflow-hidden"
+        style={{
+          height: numSize,
+          maxWidth: isCustomLogoActive ? (numSize < 40 ? '110px' : '150px') : numSize,
+          minWidth: numSize,
+        }}
+        className={`relative shrink-0 flex items-center justify-center p-0.5 transition-all duration-300 overflow-hidden ${
+          isCustomLogoActive
+            ? 'rounded-xl bg-white/95 shadow-xs border border-[var(--color-border,#EBDCD5)] px-1'
+            : 'rounded-full bg-white shadow-sm ring-1.5 ring-[var(--color-primary,#C51E28)] group-hover:ring-[var(--color-accent-orange,#F97316)]'
+        }`}
       >
         {!allImagesFailed ? (
           <img
             src={imageSources[currentSourceIndex]}
-            alt="Vastu Ritam Official Emblem"
-            className="w-full h-full object-contain rounded-full"
+            alt="Website Logo"
+            className="max-h-full max-w-full w-auto h-auto object-contain rounded-lg"
             onError={handleImageError}
           />
         ) : (
@@ -254,10 +281,10 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
       {/* Typography Lockup with Canonical BrandName Component */}
       {showText && (
         <div className="flex flex-col text-left justify-center min-w-0">
-          <div className="flex items-center gap-2 flex-nowrap leading-tight">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap leading-tight">
             <BrandName size="md" />
             <span
-              className={`hidden sm:inline-block font-['Yatra_One',serif] text-xs tracking-wide font-normal ${
+              className={`hidden xl:inline-block font-['Yatra_One',serif] text-xs tracking-wide font-normal ${
                 isLight ? 'text-[var(--color-secondary)] font-medium' : 'text-[var(--color-secondary-light)]'
               }`}
             >
@@ -266,13 +293,15 @@ export const VastuRitamLogo: React.FC<VastuRitamLogoProps> = ({
           </div>
 
           {/* Subtitle */}
-          <div
-            className={`text-[10px] xl:text-[11px] font-['Marcellus',serif] font-normal tracking-wider mt-0.5 truncate hidden sm:block ${
-              isLight ? 'text-zinc-600 font-medium' : 'text-zinc-400'
-            }`}
-          >
-            Towards Harmony through Authentic Vastu Knowledge
-          </div>
+          {showSubtitle && (
+            <div
+              className={`text-[10px] 2xl:text-[11px] font-['Marcellus',serif] font-normal tracking-wider mt-0.5 truncate hidden 2xl:block ${
+                isLight ? 'text-zinc-600 font-medium' : 'text-zinc-400'
+              }`}
+            >
+              Towards Harmony through Authentic Vastu Knowledge
+            </div>
+          )}
         </div>
       )}
     </div>

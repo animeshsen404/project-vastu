@@ -6,7 +6,7 @@ import { BrandName } from './BrandName';
 import { AdBanner } from './AdBanner';
 import { AdContainer } from './AdContainer';
 import { FolioReveal } from './FolioReveal';
-import { BookOpen, PhoneCall, Compass, CheckCircle2, ArrowRight, ShieldCheck, Sparkles, Building2, Home as HomeIcon, Award } from 'lucide-react';
+import { BookOpen, PhoneCall, CheckCircle2, ArrowRight, ShieldCheck, Sparkles, Building2, Home as HomeIcon, Award } from 'lucide-react';
 import { DIRECTIONAL_ZONES } from '../data/vastuData';
 import { useTheme } from '../context/ThemeContext';
 
@@ -19,50 +19,49 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
   const { isLight } = useTheme();
 
   return (
-    <div className="space-y-16 pb-20">
-      {/* Hero Section (Step 3: Clean ivory, intentional soft radial gradient pink-tint to ivory behind card, grid at 4% opacity) */}
+    <div className="space-y-12 sm:space-y-16 pb-20">
+      {/* Hero Section: Fully responsive across mobile, tablet, and desktop */}
       <FolioReveal>
-        <section className="relative overflow-hidden pt-6 md:pt-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <section className="relative overflow-hidden pt-2 sm:pt-6 md:pt-8 lg:pt-10 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div
-            className={`rounded-3xl p-6 sm:p-10 lg:p-14 border shadow-xl relative overflow-hidden bg-vastu-grid transition-colors duration-200 ${
+            className={`rounded-2xl sm:rounded-3xl p-4 sm:p-7 md:p-8 lg:p-12 border shadow-xl relative overflow-hidden bg-vastu-grid transition-colors duration-200 ${
               isLight
                 ? 'bg-[#FFFAF5] border-[#EBDCD5] text-[#2A1515] shadow-[#2A1515]/5'
                 : 'bg-[#1A0F0F] border-[#44262E] text-[#FFF6F7]'
             }`}
           >
-            {/* Intentional soft radial gradient (pink-tint to ivory) behind the image card */}
-            <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[520px] h-[520px] bg-gradient-to-br from-[var(--color-pink-tint)] to-[#FFFAF5] opacity-80 rounded-full blur-2xl pointer-events-none" />
+            {/* Soft radial atmospheric backdrop gradient */}
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-64 sm:w-96 lg:w-[520px] h-64 sm:h-96 lg:h-[520px] bg-gradient-to-br from-[var(--color-pink-tint)] to-[#FFFAF5] opacity-50 sm:opacity-75 rounded-full blur-2xl sm:blur-3xl pointer-events-none" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
-              {/* Left Column: Mission, Vision, and Call to Action */}
-              <div className="lg:col-span-7 space-y-6 text-left">
-                {/* Sacred Heading Kicker: Crimson text on a pink-tint pill with crimson sparkle */}
-                <div className="flex flex-wrap items-center gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-center relative z-10">
+              {/* Left Column: Mission, Vision, and Call to Action (Responsive across mobile, tablet, desktop) */}
+              <div className="md:col-span-7 space-y-4 sm:space-y-5 lg:space-y-6 text-left">
+                {/* Sacred Heading Kicker */}
+                <div className="flex flex-wrap items-center gap-2">
                   <div
-                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-['Marcellus'] font-bold uppercase tracking-wider ${
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] sm:text-xs font-['Marcellus'] font-bold uppercase tracking-wider max-w-full ${
                       isLight
                         ? 'bg-[var(--color-pink-tint)] text-[var(--color-primary)] border border-[var(--color-border)]'
                         : 'bg-[#2A151B] text-[var(--color-primary-light)] border border-[#44262E]'
                     }`}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    <span>Dedicated Institution for Classical Vastu Research & Practice</span>
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-[var(--color-primary)]" />
+                    <span className="truncate sm:whitespace-normal">Dedicated Institution for Classical Vastu Research & Practice</span>
                   </div>
-
                 </div>
 
                 <div className="space-y-2">
                   <h1
-                    className={`font-['Cinzel_Decorative'] text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black leading-tight ${
+                    className={`font-['Cinzel_Decorative'] text-2xl sm:text-3xl md:text-3xl lg:text-5xl font-black leading-tight sm:leading-tight break-words ${
                       isLight ? 'text-[#2A1515]' : 'text-[#FFF6F7]'
                     }`}
                   >
-                    Towards Harmony through <br className="hidden sm:block" />
+                    Towards Harmony through <br className="hidden sm:inline" />
                     <span className="text-[var(--color-primary)]">Authentic Vastu Knowledge</span>
                   </h1>
-                  <div className="flex items-center gap-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1">
                     <span
-                      className={`text-xl sm:text-2xl font-['Yatra_One'] ${
+                      className={`text-base sm:text-xl lg:text-2xl font-['Yatra_One'] ${
                         isLight ? 'text-[var(--color-primary)]' : 'text-[var(--color-accent-pink)]'
                       }`}
                     >
@@ -70,7 +69,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                     </span>
                     <span className="text-[#EBDCD5] dark:text-[#44262E]">|</span>
                     <span
-                      className={`text-base sm:text-lg font-['Rozha_One'] text-[var(--color-secondary)] font-bold`}
+                      className={`text-xs sm:text-sm md:text-base lg:text-lg font-['Rozha_One'] text-[var(--color-secondary)] font-bold`}
                     >
                       ॥ संतुलनात् समृद्धिः सुखम् ॥
                     </span>
@@ -78,7 +77,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                 </div>
 
                 <p
-                  className={`font-['Marcellus'] text-base sm:text-lg leading-relaxed max-w-2xl font-normal ${
+                  className={`font-['Marcellus'] text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed max-w-2xl font-normal ${
                     isLight ? 'text-zinc-700' : 'text-zinc-300'
                   }`}
                 >
@@ -87,7 +86,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                 </p>
 
                 <div
-                  className={`p-4 sm:p-5 rounded-2xl border text-sm sm:text-base font-['Marcellus'] leading-relaxed shadow-sm ${
+                  className={`p-3.5 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border text-xs sm:text-sm lg:text-base font-['Marcellus'] leading-relaxed shadow-xs sm:shadow-sm ${
                     isLight
                       ? 'bg-white/95 border-[var(--color-border)] text-zinc-800'
                       : 'bg-[#1C1317]/80 border-[var(--color-border)] text-zinc-100'
@@ -99,37 +98,37 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                 </div>
 
                 {/* Two High-Contrast Action Buttons: Red Primary, Green Secondary */}
-                <div className="pt-2 flex flex-wrap gap-4 items-center">
+                <div className="pt-1 sm:pt-2 flex flex-col sm:flex-row md:flex-col lg:flex-row flex-wrap gap-2.5 sm:gap-3 lg:gap-4 items-stretch sm:items-center md:items-stretch lg:items-center">
                   <button
                     onClick={() => onNavigate('gyan-kosh')}
-                    className="px-6 py-3.5 rounded-xl font-['Marcellus'] text-base font-bold bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border border-[var(--color-primary-dark)] transition-all shadow-md hover:shadow-lg flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full sm:w-auto md:w-full lg:w-auto justify-center px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl font-['Marcellus'] text-xs sm:text-sm lg:text-base font-bold bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border border-[var(--color-primary-dark)] transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer group shrink-0"
                   >
-                    <BookOpen className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-                    <span>Explore Vastu Gyan-Kosh (Library)</span>
+                    <BookOpen className="w-4 sm:w-5 h-4 sm:h-5 text-white group-hover:scale-110 transition-transform shrink-0" />
+                    <span className="whitespace-nowrap">Explore Vastu Gyan-Kosh</span>
                   </button>
 
                   <button
                     onClick={() => onNavigate('contact')}
-                    className="px-6 py-3.5 rounded-xl font-['Marcellus'] text-base font-bold bg-[var(--color-secondary)] hover:bg-[var(--color-secondary-hover)] text-white border border-[var(--color-secondary-dark)] transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer group"
+                    className="w-full sm:w-auto md:w-full lg:w-auto justify-center px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl font-['Marcellus'] text-xs sm:text-sm lg:text-base font-bold bg-[var(--color-secondary)] hover:bg-[var(--color-secondary-hover)] text-white border border-[var(--color-secondary-dark)] transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer group shrink-0"
                   >
-                    <PhoneCall className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-                    <span>Consult <BrandName size="inherit" /></span>
-                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    <PhoneCall className="w-4 sm:w-5 h-4 sm:h-5 text-white group-hover:scale-110 transition-transform shrink-0" />
+                    <span className="whitespace-nowrap">Consult <BrandName size="inherit" /></span>
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform shrink-0" />
                   </button>
                 </div>
               </div>
 
-              {/* Right Column: Sacred Sanctuary Imagery & Emblem Visual */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-center">
+              {/* Right Column: Sacred Sanctuary Imagery & Emblem Visual (Tablet md:col-span-5, Desktop lg:col-span-5) */}
+              <div className="md:col-span-5 flex flex-col items-center justify-center w-full mt-4 md:mt-0">
                 <div
-                  className={`relative w-full max-w-[420px] rounded-3xl overflow-hidden border-2 shadow-2xl p-3 group ${
+                  className={`relative w-full max-w-sm sm:max-w-md md:max-w-none lg:max-w-md mx-auto rounded-2xl sm:rounded-3xl overflow-hidden border-2 shadow-2xl p-2.5 sm:p-3 group ${
                     isLight
                       ? 'bg-white border-white shadow-[0_12px_40px_rgba(42,21,21,0.08)]'
                       : 'bg-[#221417] border-[#44262E] shadow-black/50'
                   }`}
                 >
                   {/* Temple Image */}
-                  <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden mb-3 border border-[var(--color-border)] bg-stone-900">
+                  <div className="relative h-48 sm:h-60 md:h-52 lg:h-72 w-full rounded-xl sm:rounded-2xl overflow-hidden mb-2.5 sm:mb-3 border border-[var(--color-border)] bg-stone-900">
                     <img
                       src="/hero-sanctuary.jpg"
                       alt="Vedic Temple Sanctuary Ambience"
@@ -142,31 +141,31 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                    <div className="absolute bottom-3 left-4 right-4 text-[#FFFAF5]">
-                      <span className="text-[11px] font-serif uppercase tracking-widest text-[var(--color-accent-orange)] block font-semibold">Vedic Architecture</span>
-                      <p className="font-['Rozha_One'] text-lg text-[#FFFAF5]">“We do not begin with remedies. We begin with understanding.”</p>
+                    <div className="absolute bottom-3 left-3 sm:left-4 right-3 sm:right-4 text-[#FFFAF5]">
+                      <span className="text-[10px] sm:text-[11px] font-serif uppercase tracking-widest text-[var(--color-accent-orange)] block font-semibold">Vedic Architecture</span>
+                      <p className="font-['Rozha_One'] text-xs sm:text-sm lg:text-base text-[#FFFAF5]">“We do not begin with remedies. We begin with understanding.”</p>
                     </div>
                   </div>
 
                   {/* Emblem Stamp Banner */}
                   <div
-                    className={`flex items-center gap-3.5 p-3.5 rounded-2xl border shadow-xs ${
+                    className={`flex items-center gap-2.5 sm:gap-3.5 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border shadow-xs ${
                       isLight
                         ? 'bg-[var(--color-surface-soft)] border-[var(--color-border)] text-zinc-900'
                         : 'bg-[#24151B] border-[var(--color-border)] text-zinc-100'
                     }`}
                   >
-                    <VastuRitamLogo variant="emblem" size={60} />
+                    <VastuRitamLogo variant="emblem" size={44} className="sm:w-[52px] sm:h-[52px] shrink-0" />
                     <div className="text-left flex-1 min-w-0">
-                      <div className="text-sm font-bold block">
-                        <BrandName size="sm" /> <span className="text-[var(--color-primary)] font-serif text-xs font-bold uppercase ml-1">Emblem</span>
+                      <div className="text-xs sm:text-sm font-bold block truncate">
+                        <BrandName size="sm" /> <span className="text-[var(--color-primary)] font-serif text-[10px] sm:text-xs font-bold uppercase ml-1">Identity</span>
                       </div>
                       <span
-                        className={`text-xs font-serif block truncate ${
+                        className={`text-[10px] sm:text-xs font-serif block truncate ${
                           isLight ? 'text-zinc-600' : 'text-zinc-400'
                         }`}
                       >
-                        9-Fold Mandala, Vastu Purusha, Lotus & Stem
+                        Vedic Architectural Canons
                       </span>
                     </div>
                     <button
@@ -351,102 +350,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ onNavigate, onReplayIn
                 >
                   Well-Being is the ultimate objective—a state of physical comfort, mental peace, and holistic harmony. A building should not only protect its inhabitants from the elements, but replenish their spirits daily.
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </FolioReveal>
-
-      {/* Feature Showcase: Digital Vastu Compass & Spatial Matrix */}
-      <FolioReveal>
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div
-            className={`rounded-3xl p-6 sm:p-10 lg:p-12 border-2 shadow-2xl relative overflow-hidden transition-colors duration-200 ${
-              isLight
-                ? 'bg-gradient-to-br from-white via-[var(--color-surface-soft)] to-emerald-50/20 border-[var(--color-border)] text-zinc-900 shadow-zinc-900/5'
-                : 'bg-gradient-to-br from-[#1C1317] via-[#121B18] to-[#1C1317] border-[var(--color-secondary)]/50 text-zinc-100'
-            }`}
-          >
-            {/* Ambient Background Aura */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[var(--color-secondary)]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10 text-left">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-lg bg-[var(--color-secondary)] text-white">
-                    <Compass className="w-5 h-5 animate-spin-slow" />
-                  </span>
-                  <span
-                    className={`text-xs font-serif uppercase tracking-widest font-bold ${
-                      isLight ? 'text-[var(--color-secondary)]' : 'text-emerald-400'
-                    }`}
-                  >
-                    Dynamic Magnetic Instrument · सजीव दिक्-साधन चक्रम्
-                  </span>
-                </div>
-
-                <h2
-                  className={`font-['Cinzel_Decorative'] text-2xl sm:text-3xl md:text-4xl font-black leading-tight ${
-                    isLight ? 'text-zinc-950' : 'text-white'
-                  }`}
-                >
-                  Animated Vastu Compass & 16-Zone Matrix
-                </h2>
-
-                <p
-                  className={`font-['Marcellus'] text-sm sm:text-base leading-relaxed max-w-2xl ${
-                    isLight ? 'text-zinc-700' : 'text-zinc-300'
-                  }`}
-                >
-                  Experience the living digital magnetic compass with physics damping and real-time drag-to-spin orientation. Calibrate to your front entrance bearing, evaluate 14 classical room types, and test Shastric compliance dynamically.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <button
-                    onClick={() => onNavigate('compass')}
-                    className="px-6 py-3 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-serif font-bold text-sm border border-[var(--color-primary-dark)] shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer group"
-                  >
-                    <Compass className="w-4 h-4 text-white group-hover:rotate-45 transition-transform" />
-                    <span>Launch Animated Compass</span>
-                    <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  <button
-                    onClick={() => onNavigate('gyan-kosh', 'shabd-kosh')}
-                    className={`px-5 py-3 rounded-xl font-serif font-bold text-sm border transition-all flex items-center gap-2 cursor-pointer ${
-                      isLight
-                        ? 'bg-white hover:bg-[var(--color-surface-soft)] text-zinc-800 border-[var(--color-border)]'
-                        : 'bg-[#1C1317] hover:bg-[#24151B] text-zinc-200 border-[var(--color-border)]'
-                    }`}
-                  >
-                    <BookOpen className="w-4 h-4 text-[var(--color-secondary)]" />
-                    <span>Read Directional Treatises</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Mini Interactive Badge Preview */}
-              <div className="lg:col-span-4 flex justify-center">
-                <div
-                  onClick={() => onNavigate('compass')}
-                  className={`w-64 h-64 rounded-full border-4 border-[var(--color-primary)] flex flex-col items-center justify-center p-6 text-center cursor-pointer shadow-xl transition-transform hover:scale-105 relative ${
-                    isLight
-                      ? 'bg-gradient-to-tr from-white via-[var(--color-surface-soft)] to-pink-50/40 text-zinc-900 shadow-zinc-900/10'
-                      : 'bg-gradient-to-tr from-[#1C1317] to-[#24151B] text-zinc-100'
-                  }`}
-                >
-                  <div className="absolute inset-2 rounded-full border border-dashed border-[var(--color-primary)]/40 animate-spin-slow" />
-                  <Compass className="w-12 h-12 text-[var(--color-primary)] mb-2" />
-                  <span className="font-['Cinzel_Decorative'] font-black text-sm tracking-wide">
-                    Live Vastu Dial
-                  </span>
-                  <span className="text-[11px] font-['Yatra_One'] text-[var(--color-secondary)] mt-0.5">
-                    16 दिक्-क्षेत्राणि
-                  </span>
-                  <span className="text-[10px] font-serif uppercase tracking-widest mt-2 px-2.5 py-0.5 rounded-full bg-[var(--color-primary)] text-white font-bold">
-                    Click to Open →
-                  </span>
-                </div>
               </div>
             </div>
           </div>

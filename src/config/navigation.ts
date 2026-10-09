@@ -1,6 +1,5 @@
 import { PageType } from '../types';
 import {
-  Compass,
   Sparkles,
   PhoneCall,
   GraduationCap,
@@ -82,6 +81,7 @@ export const NAV_CONFIG: NavigationConfig = {
     {
       id: 'home',
       label: 'Home',
+      shortLabel: 'Home',
       page: 'home',
       icon: Home,
     },
@@ -148,6 +148,7 @@ export const NAV_CONFIG: NavigationConfig = {
     {
       id: 'what-we-do',
       label: 'What We Do',
+      shortLabel: 'What We Do',
       page: 'what-we-do',
       icon: Building,
       dropdown: {
@@ -258,23 +259,16 @@ export const NAV_CONFIG: NavigationConfig = {
       },
     },
     {
-      id: 'compass',
-      label: 'Vastu Compass',
-      shortLabel: 'Compass',
-      page: 'compass',
-      icon: Compass,
-      sanskritLabel: 'दिक्-साधन चक्र',
-      badge: 'Interactive Tool',
-    },
-    {
       id: 'testimonials',
       label: 'Testimonials',
+      shortLabel: 'Testimonials',
       page: 'testimonials',
       icon: MessageSquareQuote,
     },
     {
       id: 'contact',
       label: 'Contact',
+      shortLabel: 'Contact',
       page: 'contact',
       icon: Mail,
     },
@@ -292,15 +286,6 @@ export const NAV_CONFIG: NavigationConfig = {
 
   // Slender Top Bar Utility Items
   utilityItems: [
-    {
-      id: 'compass',
-      label: 'Compass',
-      shortLabel: 'Compass',
-      icon: Compass,
-      title: 'Digital Vastu Compass (वास्तु दिशा सूचक चक्र)',
-      type: 'navigation',
-      page: 'compass',
-    },
     {
       id: 'entities',
       label: 'Entities',
@@ -332,13 +317,6 @@ export const NAV_CONFIG: NavigationConfig = {
 
   // Quick secondary navigation links shown inside the mobile drawer
   quickDrawerLinks: [
-    {
-      id: 'quick-compass',
-      label: 'Digital Vastu Compass & Matrix',
-      page: 'compass',
-      badge: 'Interactive',
-      sanskritLabel: 'दिक्-साधन चक्र',
-    },
     {
       id: 'quick-treatises',
       label: 'Canonical Treatises (All Articles)',

@@ -6,7 +6,6 @@ import {
   X,
   PhoneCall,
   Sparkles,
-  Compass,
   ArrowRight,
   Sun,
   Moon,
@@ -125,33 +124,33 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       {/* 1. SLENDER TOP SANSKRIT & UTILITY BAR (Solid ivory, 1px bottom border, text in text-body, all icons in secondary green) */}
       <div
-        className={`w-full py-1.5 px-4 sm:px-6 lg:px-8 text-xs font-serif select-none border-b transition-colors ${
+        className={`w-full py-1.5 px-3 sm:px-6 lg:px-8 text-xs font-serif select-none border-b transition-colors ${
           isLight
             ? 'bg-[#FFFAF5] border-[#EBDCD5] text-[#5A4545]'
             : 'bg-[#1A0F0F] border-[#44262E] text-[#D5C2C7]'
         }`}
       >
-        <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 w-full">
           {/* Left: Research Credential & Sanskrit Tagline */}
-          <div className="flex items-center gap-2 text-xs truncate">
+          <div className="flex items-center gap-2 text-xs truncate min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)] shadow-[0_0_6px_var(--color-secondary)] animate-pulse shrink-0" />
             <span
-              className={`font-['Marcellus'] font-medium hidden sm:inline ${
+              className={`font-['Marcellus'] font-medium truncate ${
                 isLight ? 'text-[#5A4545]' : 'text-[#D5C2C7]'
               }`}
             >
               Classical Research & Spatial Science
             </span>
-            <span className="text-[#EBDCD5] dark:text-[#44262E] hidden md:inline">·</span>
+            <span className="text-[#EBDCD5] dark:text-[#44262E] hidden md:inline shrink-0">·</span>
             <span
-              className="font-['Yatra_One'] hidden md:inline tracking-wider text-[var(--color-secondary)]"
+              className="font-['Yatra_One'] hidden md:inline tracking-wider text-[var(--color-secondary)] shrink-0"
             >
               ॥ संतुलनात् समृद्धिः सुखम् ॥
             </span>
           </div>
 
           {/* Right: Centralized Utility Actions + Theme Mode Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {NAV_CONFIG.utilityItems.map((uItem, index) => {
               const Icon = uItem.icon;
 
@@ -255,23 +254,23 @@ export const Navbar: React.FC<NavbarProps> = ({
              Desktop: 72px height, baseline centered
              Mobile/Tablet: 64px height, baseline centered
           ========================================================================= */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 w-full">
         {/* DESKTOP BAR (lg:flex) */}
-        <div className="hidden lg:flex items-center justify-between h-[72px] w-full gap-4 xl:gap-6">
+        <div className="hidden lg:flex items-center justify-between h-[72px] w-full gap-1.5 lg:gap-2 xl:gap-3 2xl:gap-6 min-w-0">
           {/* COL 1 (LEFT): BRAND IDENTITY LOGO */}
-          <div className="h-full flex items-center justify-start shrink-0">
+          <div className="h-full flex items-center justify-start shrink-0 min-w-0">
             <button
               onClick={() => handleSubNavigate('home')}
-              className="group flex items-center gap-3 text-left focus:outline-none transition-transform hover:scale-[1.01] cursor-pointer"
+              className="group flex items-center gap-2 xl:gap-3 text-left focus:outline-none transition-transform hover:scale-[1.01] cursor-pointer"
               aria-label="Vastu Ritam Home"
             >
-              <VastuRitamLogo variant="horizontal" size={44} />
+              <VastuRitamLogo variant="horizontal" size={38} className="lg:scale-95 xl:scale-100 origin-left" />
             </button>
           </div>
 
           {/* COL 2 (CENTER): DYNAMICALLY MAPPED NAVIGATION TABS */}
           <nav
-            className="h-full flex items-center justify-center gap-1 xl:gap-1.5 select-none"
+            className="h-full flex items-center justify-center gap-0.5 xl:gap-1 2xl:gap-1.5 select-none min-w-0"
             aria-label="Primary Navigation"
           >
             {NAV_CONFIG.mainNav.map((item) => {
@@ -283,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={item.id}
                     onClick={() => handleSubNavigate(item.page, item.subTab)}
-                    className={`h-9 px-2.5 xl:px-3 rounded-lg text-xs xl:text-sm font-['Marcellus',serif] whitespace-nowrap tracking-wide inline-flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
+                    className={`h-9 px-1.5 lg:px-2 xl:px-2.5 2xl:px-3 rounded-lg text-xs xl:text-[13px] 2xl:text-sm font-['Marcellus',serif] whitespace-nowrap tracking-wide inline-flex items-center justify-center transition-all duration-200 cursor-pointer relative group ${
                       active
                         ? 'bg-[var(--color-pink-tint)] text-[var(--color-primary)] font-bold shadow-xs'
                         : isLight
@@ -291,7 +290,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'text-[#D5C2C7] hover:text-[#FFF6F7] hover:bg-white/5'
                     }`}
                   >
-                    <span>{item.label}</span>
+                    <span className="hidden 2xl:inline">{item.label}</span>
+                    <span className="2xl:hidden">{item.shortLabel || item.label}</span>
                     <span className="absolute bottom-1 left-2.5 right-2.5 h-[2px] bg-[var(--color-accent)] scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
                   </button>
                 );
@@ -311,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => handleSubNavigate(item.page, item.subTab)}
                     aria-expanded={isDropdownOpen}
-                    className={`group h-9 px-2.5 xl:px-3 rounded-lg text-xs xl:text-sm font-['Marcellus',serif] whitespace-nowrap tracking-wide transition-all duration-200 inline-flex items-center justify-center gap-1 cursor-pointer relative ${
+                    className={`group h-9 px-1.5 lg:px-2 xl:px-2.5 2xl:px-3 rounded-lg text-xs xl:text-[13px] 2xl:text-sm font-['Marcellus',serif] whitespace-nowrap tracking-wide transition-all duration-200 inline-flex items-center justify-center gap-1 cursor-pointer relative ${
                       active
                         ? 'bg-[var(--color-pink-tint)] text-[var(--color-primary)] font-bold shadow-xs'
                         : isLight
@@ -319,8 +319,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'text-[#D5C2C7] hover:text-[#FFF6F7] hover:bg-white/5'
                     }`}
                   >
-                    <span className="hidden xl:inline">{item.label}</span>
-                    <span className="xl:hidden">{item.shortLabel || item.label}</span>
+                    <span className="hidden 2xl:inline">{item.label}</span>
+                    <span className="2xl:hidden">{item.shortLabel || item.label}</span>
                     <ChevronDown
                       className={`w-3 h-3 shrink-0 transition-transform duration-200 ${
                         isDropdownOpen
@@ -441,13 +441,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => handleSubNavigate(NAV_CONFIG.primaryCta.page, NAV_CONFIG.primaryCta.subTab)}
               aria-label={NAV_CONFIG.primaryCta.ariaLabel}
-              className="h-10 inline-flex items-center justify-center gap-2 px-4 xl:px-5 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-['Marcellus',serif] font-bold text-xs xl:text-sm tracking-wide shadow-md shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer border border-[var(--color-primary-dark)]"
+              className="h-9 xl:h-10 inline-flex items-center justify-center gap-1.5 xl:gap-2 px-2.5 lg:px-3 xl:px-4 2xl:px-5 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-['Marcellus',serif] font-bold text-xs xl:text-sm tracking-wide shadow-md shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer border border-[var(--color-primary-dark)] shrink-0"
             >
               <NAV_CONFIG.primaryCta.icon className="w-3.5 h-3.5 text-white shrink-0" />
-              <span className="whitespace-nowrap hidden xl:inline">
+              <span className="whitespace-nowrap hidden 2xl:inline">
                 {NAV_CONFIG.primaryCta.label}
               </span>
-              <span className="whitespace-nowrap xl:hidden">
+              <span className="whitespace-nowrap 2xl:hidden">
                 {NAV_CONFIG.primaryCta.shortLabel}
               </span>
             </button>
@@ -458,15 +458,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             MOBILE & TABLET HEADER BAR (< 1024px)
             Height: Exactly 64px with matching baseline alignment
             ========================================================================= */}
-        <div className="lg:hidden flex items-center justify-between h-[64px] w-full">
+        <div className="lg:hidden flex items-center justify-between h-[64px] w-full min-w-0">
           {/* Logo on Left - Baseline Centered */}
-          <div className="h-full flex items-center justify-start shrink-0">
+          <div className="h-full flex items-center justify-start shrink-0 min-w-0">
             <button
               onClick={() => handleSubNavigate('home')}
-              className="flex items-center gap-2.5 text-left focus:outline-none cursor-pointer"
+              className="flex items-center gap-2 text-left focus:outline-none cursor-pointer min-w-0"
               aria-label="Vastu Ritam Home"
             >
-              <VastuRitamLogo variant="horizontal" size={38} />
+              <VastuRitamLogo variant="horizontal" size={36} showSubtitle={false} />
             </button>
           </div>
 
@@ -475,26 +475,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Direct 1-tap phone consultation button for mobile/tablets */}
             <button
               onClick={() => handleSubNavigate(NAV_CONFIG.primaryCta.page, NAV_CONFIG.primaryCta.subTab)}
-              className="h-10 w-10 sm:w-auto sm:px-3.5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)] text-white font-['Marcellus',serif] font-bold text-xs tracking-wide shadow-sm hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer border border-[var(--color-primary-dark)]"
+              className="h-9 px-2.5 sm:px-3.5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-primary)] text-white font-['Marcellus',serif] font-bold text-xs tracking-wide shadow-sm hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all cursor-pointer border border-[var(--color-primary-dark)] shrink-0"
               aria-label={NAV_CONFIG.primaryCta.label}
               title={NAV_CONFIG.primaryCta.label}
             >
-              <NAV_CONFIG.primaryCta.icon className="w-4 h-4 shrink-0 text-white" />
-              <span className="hidden sm:inline">{NAV_CONFIG.primaryCta.shortLabel}</span>
+              <NAV_CONFIG.primaryCta.icon className="w-3.5 h-3.5 shrink-0 text-white" />
+              <span className="hidden sm:inline whitespace-nowrap">{NAV_CONFIG.primaryCta.shortLabel}</span>
             </button>
 
             {/* Mobile Menu Drawer Toggle Button */}
             <button
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-[var(--color-border)] focus:outline-none transition-colors cursor-pointer text-zinc-700 dark:text-zinc-200 hover:text-[var(--color-primary)] hover:bg-[var(--color-surface-soft)]"
+              className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-[var(--color-border)] focus:outline-none transition-colors cursor-pointer text-zinc-700 dark:text-zinc-200 hover:text-[var(--color-primary)] hover:bg-[var(--color-surface-soft)] shrink-0"
               aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation-drawer"
             >
               {mobileMenuOpen ? (
-                <X className="w-5 h-5 text-[var(--color-primary)]" />
+                <X className="w-4.5 h-4.5 text-[var(--color-primary)]" />
               ) : (
-                <Menu className="w-5 h-5 text-[var(--color-primary)]" />
+                <Menu className="w-4.5 h-4.5 text-[var(--color-primary)]" />
               )}
             </button>
           </div>

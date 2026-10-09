@@ -23,6 +23,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { BrandName } from '../BrandName';
 
 export type AdminTab =
@@ -34,6 +35,7 @@ export type AdminTab =
   | 'videos'
   | 'ads'
   | 'media'
+  | 'logo'
   | 'contact'
   | 'security'
   | 'users'
@@ -73,6 +75,7 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
   { id: 'videos', label: 'Gyan Kosh: Video Learning', icon: Video },
   { id: 'ads', label: 'Advertisement CMS', icon: Megaphone },
   { id: 'media', label: 'Media Library', icon: ImageIcon },
+  { id: 'logo', label: 'Emblem & Logo Image', icon: ImageIcon },
   { id: 'contact', label: 'Admin Contact Details', icon: PhoneCall },
   { id: 'security', label: 'Security & Login Credentials', icon: KeyRound },
 ];
@@ -92,6 +95,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
 }) => {
   const { isLight, toggleTheme } = useTheme();
+  const { logoUrl } = useSiteSettings();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Close mobile sidebar on route/tab change or window resize
@@ -142,7 +146,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {/* Vastu Ritam Trademark Logo & System Badge */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-white p-0.5 border border-amber-500 overflow-hidden shrink-0 shadow-sm">
-              <img src="/trademark-logo.jpg" alt="Vastu Ritam Emblem" className="w-full h-full object-contain" />
+              <img src={logoUrl || "/trademark-logo.jpg"} alt="Vastu Ritam Emblem" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">

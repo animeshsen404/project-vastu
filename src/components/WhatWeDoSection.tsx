@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ServiceType, PageType } from '../types';
-import { SERVICES_DATA, DIRECTIONAL_ZONES } from '../data/vastuData';
+import { SERVICES_DATA } from '../data/vastuData';
 import { FolioReveal } from './FolioReveal';
-import { Home as HomeIcon, Building2, Factory, ShoppingCart, PhoneCall, CheckCircle2, AlertTriangle, Compass, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
+import { Home as HomeIcon, Building2, Factory, ShoppingCart, PhoneCall, ArrowRight, Sparkles, BookOpen, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { BrandName } from './BrandName';
 
@@ -17,7 +17,6 @@ export const WhatWeDoSection: React.FC<WhatWeDoSectionProps> = ({
 }) => {
   const { isLight } = useTheme();
   const [activeService, setActiveService] = useState<ServiceType>(initialService);
-  const [selectedDirection, setSelectedDirection] = useState<string>('NE');
 
   useEffect(() => {
     if (initialService) {
@@ -34,7 +33,6 @@ export const WhatWeDoSection: React.FC<WhatWeDoSectionProps> = ({
   ];
 
   const currentServiceData = SERVICES_DATA.find((s) => s.id === activeService);
-  const activeZone = DIRECTIONAL_ZONES.find((z) => z.code === selectedDirection) || DIRECTIONAL_ZONES[0];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
@@ -219,121 +217,6 @@ export const WhatWeDoSection: React.FC<WhatWeDoSectionProps> = ({
           </div>
         </FolioReveal>
       )}
-
-      {/* Interactive 9-Zone Spatial Matrix Explorer */}
-      <FolioReveal>
-        <div className={`rounded-3xl border-2 shadow-2xl p-6 sm:p-10 space-y-8 bg-mandala-pattern ${
-          isLight
-            ? 'bg-gradient-to-br from-[#FFFDF9] via-[#FAF5EC] to-[#F4ECE0] border-amber-400 text-stone-900 shadow-amber-900/10'
-            : 'section-terracotta-rich border-[#D4A72C] text-[#FFF7ED]'
-        }`}>
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <div className="flex items-center justify-center gap-2 text-xs font-serif uppercase tracking-widest text-[#E88A16] font-bold">
-              <Compass className="w-4 h-4 text-[#E88A16]" />
-              <span>Interactive Directional Matrix</span>
-              <span className="opacity-60">·</span>
-              <span>दिक्-साधनम्</span>
-            </div>
-            <h3 className={`font-['Cinzel_Decorative'] text-2xl sm:text-3xl font-black ${
-              isLight ? 'text-stone-950' : 'text-[#FFF7ED]'
-            }`}>
-              The 9 Spatial Zones & Elemental Dynamics
-            </h3>
-            <p className={`font-['Marcellus'] text-sm sm:text-base ${
-              isLight ? 'text-stone-700' : 'text-[#E8D3A8]'
-            }`}>
-              Click on any directional zone to inspect its elemental ruler, Shastric recommendations, and cautionary guidelines.
-            </p>
-          </div>
-
-          {/* 3x3 Grid Compass Selector */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto">
-            {DIRECTIONAL_ZONES.map((zone) => {
-              const isSelected = selectedDirection === zone.code;
-              return (
-                <button
-                  key={zone.code}
-                  onClick={() => setSelectedDirection(zone.code)}
-                  className={`p-3 sm:p-4 rounded-xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center shadow-md ${
-                    isSelected
-                      ? 'bg-[#E88A16] border-[#6B1F1F] text-[#2D1B14] font-black scale-105 shadow-[0_0_20px_rgba(232,138,22,0.5)]'
-                      : isLight
-                      ? 'bg-white border-amber-300 text-stone-800 hover:bg-amber-100 hover:text-stone-950'
-                      : 'bg-[#2D1B14] border-[#D4A72C]/70 text-[#E8D3A8] hover:bg-[#6B1F1F] hover:text-[#FFF7ED]'
-                  }`}
-                >
-                  <span className={`text-[10px] font-mono tracking-widest uppercase font-bold ${
-                    isSelected ? 'text-[#6B1F1F]' : isLight ? 'text-amber-800' : 'text-[#D4A72C]'
-                  }`}>
-                    {zone.direction}
-                  </span>
-                  <span className="font-['Cinzel_Decorative'] text-base sm:text-lg font-black mt-0.5">
-                    {zone.code}
-                  </span>
-                  <span className={`text-[11px] font-serif line-clamp-1 ${
-                    isSelected ? 'text-[#2D1B14]' : isLight ? 'text-stone-700' : 'text-[#E8D3A8]'
-                  }`}>
-                    {zone.name.split(' ')[0]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Zone Detailed Explanation Card */}
-          {activeZone && (
-            <div className={`rounded-2xl p-6 sm:p-8 border-2 shadow-2xl max-w-3xl mx-auto text-left space-y-4 animate-in fade-in duration-150 ${
-              isLight ? 'bg-white border-amber-300 text-stone-900 shadow-amber-900/10' : 'bg-[#E8D3A8] text-[#2D1B14] border-[#D4A72C]'
-            }`}>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#D4A72C]/60 pb-3">
-                <div>
-                  <span className="text-xs uppercase font-serif font-bold text-[#FFF7ED] bg-[#6B1F1F] px-2.5 py-0.5 rounded border border-[#D4A72C]">
-                    {activeZone.direction} Quadrant ({activeZone.code})
-                  </span>
-                  <h4 className={`font-['Cinzel_Decorative'] text-xl sm:text-2xl font-black mt-1.5 ${
-                    isLight ? 'text-stone-950' : 'text-[#2D1B14]'
-                  }`}>
-                    {activeZone.name}
-                  </h4>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-[#0F5C55] font-serif font-bold block">
-                    Element: {activeZone.element}
-                  </span>
-                  <span className="text-xs text-[#6B1F1F] font-serif font-semibold block">
-                    Ruling Divinity: {activeZone.deity}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3 font-['Marcellus'] text-sm sm:text-base">
-                <div>
-                  <strong className={`font-bold ${isLight ? 'text-stone-900' : 'text-[#2D1B14]'}`}>Energy & Spatial Attributes:</strong>
-                  <p className={`mt-0.5 leading-relaxed font-medium ${isLight ? 'text-stone-700' : 'text-[#3A2318]'}`}>{activeZone.attributes}</p>
-                </div>
-
-                {/* Recommended: Deep Teal Box */}
-                <div className="p-4 rounded-xl bg-[#0F5C55] text-[#FFF7ED] border-2 border-[#D4A72C] shadow-md">
-                  <strong className="text-[#D4A72C] flex items-center gap-1.5 font-serif uppercase tracking-wider text-xs">
-                    <CheckCircle2 className="w-4 h-4 text-[#D4A72C]" />
-                    Recommended Spatial Allocations:
-                  </strong>
-                  <p className="mt-1 text-sm text-[#FFF7ED] leading-relaxed">{activeZone.recommendation}</p>
-                </div>
-
-                {/* Caution: Deep Maroon Box */}
-                <div className="p-4 rounded-xl bg-[#6B1F1F] text-[#FFF7ED] border-2 border-[#D4A72C] shadow-md">
-                  <strong className="text-[#FDE68A] flex items-center gap-1.5 font-serif uppercase tracking-wider text-xs">
-                    <AlertTriangle className="w-4 h-4 text-[#FDE68A]" />
-                    Classical Cautions to Avoid:
-                  </strong>
-                  <p className="mt-1 text-sm text-[#FFF7ED] leading-relaxed">{activeZone.caution}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </FolioReveal>
 
       {/* Need Guidance? Consult Tab CTA Banner */}
       <FolioReveal>

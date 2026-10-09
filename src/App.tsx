@@ -14,7 +14,6 @@ import { WhatWeDoSection } from './components/WhatWeDoSection';
 import { GyanKoshSection } from './components/GyanKoshSection';
 import { TestimonialsSection } from './components/TestimonialsSection';
 import { ContactSection } from './components/ContactSection';
-import { VastuCompassSection } from './components/VastuCompassSection';
 import { AdminPanel } from './components/AdminPanel';
 import { KnowledgeList } from './components/KnowledgeList';
 import { ArticleView } from './components/ArticleView';
@@ -132,11 +131,6 @@ export default function App() {
       return;
     }
 
-    if (pathname === '/compass') {
-      setCurrentPage('compass');
-      return;
-    }
-
     if (pathname === '/testimonials') {
       setCurrentPage('testimonials');
       return;
@@ -198,9 +192,6 @@ export default function App() {
           newPath = '/gyan-kosh';
           if (subTab) setGyanKoshSubTab(subTab as LibraryCategory);
           break;
-        case 'compass':
-          newPath = '/compass';
-          break;
         case 'testimonials':
           newPath = '/testimonials';
           break;
@@ -228,7 +219,7 @@ export default function App() {
         isLight
           ? 'bg-[#FFFAF5] text-[#2A1515] selection:bg-[#FCE7EC] selection:text-[var(--color-primary)]'
           : `${isAdminRoute ? 'bg-[#140B07]' : 'bg-[#1A0F0F]'} text-[#FFF6F7] selection:bg-[var(--color-primary)] selection:text-white`
-      } flex flex-col font-['Marcellus'] relative overflow-x-hidden`}
+      } flex flex-col font-['Marcellus'] relative w-full overflow-x-hidden`}
     >
       {/* Divine Mouse Cursor */}
       <DivineCursor />
@@ -303,12 +294,6 @@ export default function App() {
         {currentPage === 'gyan-kosh' && (
           <GyanKoshSection
             initialCategory={gyanKoshSubTab}
-            onNavigate={handleNavigate}
-          />
-        )}
-
-        {currentPage === 'compass' && (
-          <VastuCompassSection
             onNavigate={handleNavigate}
           />
         )}

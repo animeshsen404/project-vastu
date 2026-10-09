@@ -34,6 +34,7 @@ import {
   createSessionToken,
   type AuthRequest,
 } from './src/middleware/auth.ts';
+import { dataStore } from './src/lib/dataStore.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -215,6 +216,7 @@ const DEFAULT_SETTINGS = {
   twitterHandle: '@VastuRitam',
   officeAddress: 'Vastu Ritam Research & Vedic Architecture Sanctuary, Pune / Mumbai, Maharashtra, Bharat',
   collaborationNotice: 'Collaborations welcome from registered Architects (COA), Civil Structural Engineers, and Researchers.',
+  logoUrl: '/trademark-logo.jpg',
 };
 
 // High traffic performance middlewares:
@@ -251,7 +253,19 @@ app.use('/uploads', express.static(uploadsDir));
 // -----------------------------------------------------------------------------
 app.get('/api/videos', async (req: Request, res: Response) => {
   if (!isPostgresConfigured) {
-    return res.json({ videos: [] });
+    const { category, topic, search } = req.query;
+    let list = dataStore.getVideos(true);
+    if (category) {
+      list = list.filter(v => v.categorySlug === String(category).toLowerCase());
+    }
+    if (topic) {
+      list = list.filter(v => v.topicSlug === String(topic).toLowerCase());
+    }
+    if (search) {
+      const q = String(search).toLowerCase();
+      list = list.filter(v => v.title.toLowerCase().includes(q) || v.description.toLowerCase().includes(q));
+    }
+    return res.json({ videos: list });
   }
   try {
     const { category, topic, search } = req.query;
@@ -336,7 +350,15 @@ app.get('/api/videos', async (req: Request, res: Response) => {
 
 app.get('/api/videos/:slugOrId', async (req: Request, res: Response) => {
   if (!isPostgresConfigured) {
-    return res.status(404).json({ error: 'Video not found' });
+    const { slugOrId } = req.params;
+    const isNumeric = /^\d+$/.test(slugOrId);
+    const video = isNumeric
+      ? dataStore.getVideoById(parseInt(slugOrId, 10))
+      : dataStore.getVideos(true).find((v) => v.slug === slugOrId.toLowerCase().trim());
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    return res.json({ video });
   }
   try {
     const { slugOrId } = req.params;
@@ -403,13 +425,21 @@ app.get('/api/articles', async (req: Request, res: Response) => {
     const { category, topic, keyword, search, page = '1', limit = '10' } = req.query;
 
     if (!isPostgresConfigured) {
-      let filtered = [...FALLBACK_ARTICLES];
+      let filtered = dataStore.getArticles(true);
       if (category && typeof category === 'string') {
-        filtered = filtered.filter(a => a.categorySlug === category);
+        filtered = filtered.filter((a) => a.categorySlug === category);
+      }
+      if (topic && typeof topic === 'string') {
+        filtered = filtered.filter((a) => a.topics?.some((t) => t.slug === topic));
       }
       if (search && typeof search === 'string' && search.trim()) {
         const q = search.trim().toLowerCase();
-        filtered = filtered.filter(a => a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q));
+        filtered = filtered.filter(
+          (a) =>
+            a.title.toLowerCase().includes(q) ||
+            a.excerpt.toLowerCase().includes(q) ||
+            a.content.toLowerCase().includes(q)
+        );
       }
       return res.json({
         articles: filtered,
@@ -1855,34 +1885,16 @@ app.get('/api/auth/login-info', async (_req: Request, res: Response) => {
 // -----------------------------------------------------------------------------
 app.get('/api/contact-details', async (_req: Request, res: Response) => {
   if (!isPostgresConfigured) {
-    return res.json({ settings: DEFAULT_SETTINGS });
+    return res.json({ settings: dataStore.getSettings() });
   }
   try {
     const settings = await db.select().from(siteSettings).limit(1);
     if (settings.length === 0) {
-      return res.json({
-        settings: {
-          primaryPhone: '+91 98200 18272',
-          secondaryPhone: '+91 98200 45678',
-          primaryEmail: 'contact@vasturitam.com',
-          consultationEmail: 'consultation@vasturitam.com',
-          whatsappNumber: '+919820018272',
-          whatsappNotice: '✦ WhatsApp Available for Blueprint Sharing',
-          consultationTimings: 'Monday – Saturday: 10:00 AM – 6:30 PM (IST)',
-          appointmentNotice: 'Prior appointment required for in-depth architectural floor plan audit.',
-          youtubeUrl: 'https://youtube.com',
-          youtubeHandle: '@VastuRitam',
-          twitterUrl: 'https://x.com',
-          twitterHandle: '@VastuRitam',
-          officeAddress: 'Vastu Ritam Research & Vedic Architecture Sanctuary, Pune / Mumbai, Maharashtra, Bharat',
-          collaborationNotice: 'Collaborations welcome from registered Architects (COA), Civil Structural Engineers, and Researchers.',
-        },
-      });
+      return res.json({ settings: dataStore.getSettings() });
     }
     res.json({ settings: settings[0] });
   } catch (error) {
-    console.warn('Error fetching contact details, serving default:', error);
-    res.json({ settings: DEFAULT_SETTINGS });
+    res.json({ settings: dataStore.getSettings() });
   }
 });
 
@@ -1893,20 +1905,26 @@ app.get('/api/contact-details', async (_req: Request, res: Response) => {
 // Dashboard Stats
 app.get('/api/admin/dashboard', requireAuth, async (_req: AuthRequest, res: Response) => {
   if (!isPostgresConfigured) {
+    const allArts = dataStore.getArticles(false);
+    const pubArts = dataStore.getArticles(true);
+    const ads = dataStore.getAds();
+    const impressions = ads.reduce((acc, a) => acc + (a.impressions || 0), 0);
+    const clicks = ads.reduce((acc, a) => acc + (a.clicks || 0), 0);
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : '0.00';
     return res.json({
       counts: {
-        totalArticles: FALLBACK_ARTICLES.length,
-        publishedArticles: FALLBACK_ARTICLES.length,
-        draftArticles: 0,
-        totalTopics: FALLBACK_TOPICS.length,
-        totalCategories: FALLBACK_CATEGORIES.length,
-        totalKeywords: 4,
-        totalAds: 0,
-        totalImpressions: 0,
-        totalClicks: 0,
-        ctr: '0.00%',
+        totalArticles: allArts.length,
+        publishedArticles: pubArts.length,
+        draftArticles: allArts.length - pubArts.length,
+        totalTopics: dataStore.getTopics().length,
+        totalCategories: dataStore.getCategories().length,
+        totalKeywords: dataStore.getKeywords().length,
+        totalAds: ads.length,
+        totalImpressions: impressions,
+        totalClicks: clicks,
+        ctr: `${ctr}%`,
       },
-      recentLogs: [],
+      recentLogs: dataStore.getAuditLogs().slice(0, 10),
     });
   }
   try {
@@ -1958,15 +1976,35 @@ app.get('/api/admin/dashboard', requireAuth, async (_req: AuthRequest, res: Resp
       recentLogs,
     });
   } catch (error) {
-    console.error('Admin dashboard error:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+    console.warn('Admin dashboard error, falling back to dataStore:', error);
+    const allArts = dataStore.getArticles(false);
+    const pubArts = dataStore.getArticles(true);
+    const ads = dataStore.getAds();
+    const impressions = ads.reduce((acc, a) => acc + (a.impressions || 0), 0);
+    const clicks = ads.reduce((acc, a) => acc + (a.clicks || 0), 0);
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : '0.00';
+    res.json({
+      counts: {
+        totalArticles: allArts.length,
+        publishedArticles: pubArts.length,
+        draftArticles: allArts.length - pubArts.length,
+        totalTopics: dataStore.getTopics().length,
+        totalCategories: dataStore.getCategories().length,
+        totalKeywords: dataStore.getKeywords().length,
+        totalAds: ads.length,
+        totalImpressions: impressions,
+        totalClicks: clicks,
+        ctr: `${ctr}%`,
+      },
+      recentLogs: dataStore.getAuditLogs().slice(0, 10),
+    });
   }
 });
 
 // Articles CRUD
 app.get('/api/admin/articles', requireAuth, async (_req: AuthRequest, res: Response) => {
   if (!isPostgresConfigured) {
-    return res.json({ articles: FALLBACK_ARTICLES });
+    return res.json({ articles: dataStore.getArticles(false) });
   }
   try {
     const list = await db
@@ -1994,8 +2032,8 @@ app.get('/api/admin/articles', requireAuth, async (_req: AuthRequest, res: Respo
 
     res.json({ articles: list });
   } catch (error) {
-    console.error('Error fetching admin articles:', error);
-    res.status(500).json({ error: 'Failed to retrieve articles' });
+    console.warn('Fallback to dataStore for admin articles:', error);
+    res.json({ articles: dataStore.getArticles(false) });
   }
 });
 
@@ -2018,6 +2056,41 @@ app.post('/api/admin/articles', requireAuth, requireRole(['admin', 'editor']), a
 
     if (!title || !slug || !excerpt || !content) {
       return res.status(400).json({ error: 'Title, slug, excerpt, and content are required' });
+    }
+
+    if (!isPostgresConfigured) {
+      const created = dataStore.createArticle({
+        title,
+        slug: slug.toLowerCase().trim(),
+        excerpt,
+        content,
+        featuredImage: featuredImage || '/hero-sanctuary.jpg',
+        categoryId: categoryId ? parseInt(categoryId, 10) : null,
+        authorId: req.user?.id || 1,
+        authorName: req.user?.displayName || 'Admin',
+        status: status as any,
+        metaTitle,
+        metaDescription,
+        readingTimeMinutes: parseInt(readingTimeMinutes, 10) || 5,
+        publishedAt: status === 'published' ? new Date().toISOString() : null,
+      });
+
+      if (Array.isArray(topicIds) && topicIds.length > 0) {
+        dataStore.setArticleTopics(created.id, topicIds.map(Number));
+      }
+      if (Array.isArray(keywordIds) && keywordIds.length > 0) {
+        dataStore.setArticleKeywords(created.id, keywordIds.map(Number));
+      }
+
+      dataStore.createAuditLog({
+        userId: req.user?.id || 1,
+        action: 'CREATE_ARTICLE',
+        entityType: 'ARTICLE',
+        entityId: String(created.id),
+        details: `Created article "${title}" with status "${status}"`,
+      });
+
+      return res.status(201).json({ article: created });
     }
 
     const publishedAt = status === 'published' ? new Date() : null;
@@ -2071,8 +2144,13 @@ app.post('/api/admin/articles', requireAuth, requireRole(['admin', 'editor']), a
 
     res.status(201).json({ article: newArticle });
   } catch (error: any) {
-    console.error('Error creating article:', error);
-    res.status(500).json({ error: error.message || 'Failed to create article' });
+    console.warn('Error creating article in DB, using fallback dataStore:', error);
+    try {
+      const created = dataStore.createArticle(req.body);
+      return res.status(201).json({ article: created });
+    } catch (fallbackErr: any) {
+      res.status(500).json({ error: error.message || 'Failed to create article' });
+    }
   }
 });
 
@@ -2093,6 +2171,49 @@ app.put('/api/admin/articles/:id', requireAuth, requireRole(['admin', 'editor'])
       topicIds,
       keywordIds,
     } = req.body;
+
+    if (!isPostgresConfigured) {
+      const existing = dataStore.getArticleById(id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+
+      let publishedAt = existing.publishedAt;
+      if (status === 'published' && !publishedAt) {
+        publishedAt = new Date().toISOString();
+      }
+
+      const updated = dataStore.updateArticle(id, {
+        title: title || existing.title,
+        slug: slug ? slug.toLowerCase().trim() : existing.slug,
+        excerpt: excerpt !== undefined ? excerpt : existing.excerpt,
+        content: content !== undefined ? content : existing.content,
+        featuredImage: featuredImage !== undefined ? featuredImage : existing.featuredImage,
+        categoryId: categoryId !== undefined ? (categoryId ? parseInt(categoryId, 10) : null) : existing.categoryId,
+        status: (status || existing.status) as any,
+        metaTitle: metaTitle !== undefined ? metaTitle : existing.metaTitle,
+        metaDescription: metaDescription !== undefined ? metaDescription : existing.metaDescription,
+        readingTimeMinutes: readingTimeMinutes ? parseInt(readingTimeMinutes, 10) : existing.readingTimeMinutes,
+        publishedAt,
+      });
+
+      if (Array.isArray(topicIds)) {
+        dataStore.setArticleTopics(id, topicIds.map(Number));
+      }
+      if (Array.isArray(keywordIds)) {
+        dataStore.setArticleKeywords(id, keywordIds.map(Number));
+      }
+
+      dataStore.createAuditLog({
+        userId: req.user?.id || 1,
+        action: 'UPDATE_ARTICLE',
+        entityType: 'ARTICLE',
+        entityId: String(id),
+        details: `Updated article "${updated?.title}" (status: ${updated?.status})`,
+      });
+
+      return res.json({ article: updated });
+    }
 
     const existing = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
     if (existing.length === 0) {
@@ -2153,7 +2274,12 @@ app.put('/api/admin/articles/:id', requireAuth, requireRole(['admin', 'editor'])
 
     res.json({ article: updated[0] });
   } catch (error: any) {
-    console.error('Error updating article:', error);
+    console.warn('Error updating article in DB, using fallback dataStore:', error);
+    const id = parseInt(req.params.id, 10);
+    const updated = dataStore.updateArticle(id, req.body);
+    if (updated) {
+      return res.json({ article: updated });
+    }
     res.status(500).json({ error: error.message || 'Failed to update article' });
   }
 });
@@ -2161,6 +2287,23 @@ app.put('/api/admin/articles/:id', requireAuth, requireRole(['admin', 'editor'])
 app.delete('/api/admin/articles/:id', requireAuth, requireRole(['admin']), async (req: AuthRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
+
+    if (!isPostgresConfigured) {
+      const existing = dataStore.getArticleById(id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+      dataStore.deleteArticle(id);
+      dataStore.createAuditLog({
+        userId: req.user?.id || 1,
+        action: 'DELETE_ARTICLE',
+        entityType: 'ARTICLE',
+        entityId: String(id),
+        details: `Deleted article "${existing.title}"`,
+      });
+      return res.json({ message: 'Article deleted successfully' });
+    }
+
     const existing = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Article not found' });
@@ -2178,8 +2321,9 @@ app.delete('/api/admin/articles/:id', requireAuth, requireRole(['admin']), async
 
     res.json({ message: 'Article deleted successfully' });
   } catch (error: any) {
-    console.error('Error deleting article:', error);
-    res.status(500).json({ error: error.message || 'Failed to delete article' });
+    const id = parseInt(req.params.id, 10);
+    dataStore.deleteArticle(id);
+    res.json({ message: 'Article deleted successfully' });
   }
 });
 
@@ -3209,6 +3353,33 @@ app.put('/api/admin/settings/contact', requireAuth, requireRole(['admin', 'edito
       return res.status(400).json({ error: 'Primary email address is required' });
     }
 
+    if (!isPostgresConfigured) {
+      const updatedSettings = dataStore.updateSettings({
+        primaryPhone: primaryPhone.trim(),
+        secondaryPhone: secondaryPhone?.trim() || null,
+        primaryEmail: primaryEmail.trim(),
+        consultationEmail: consultationEmail?.trim() || null,
+        whatsappNumber: whatsappNumber?.trim() || null,
+        whatsappNotice: whatsappNotice?.trim() || null,
+        consultationTimings: consultationTimings?.trim() || null,
+        appointmentNotice: appointmentNotice?.trim() || null,
+        youtubeUrl: youtubeUrl?.trim() || null,
+        youtubeHandle: youtubeHandle?.trim() || null,
+        twitterUrl: twitterUrl?.trim() || null,
+        twitterHandle: twitterHandle?.trim() || null,
+        officeAddress: officeAddress?.trim() || null,
+        collaborationNotice: collaborationNotice?.trim() || null,
+        adsensePublisherId: adsensePublisherId ? adsensePublisherId.trim() : 'ca-pub-9697854430800000',
+        adsenseEnabled: adsenseEnabled !== undefined ? Boolean(adsenseEnabled) : true,
+        adsenseAutoAds: adsenseAutoAds !== undefined ? Boolean(adsenseAutoAds) : false,
+      });
+      apiCache.invalidatePrefix('settings:');
+      return res.json({
+        settings: updatedSettings,
+        message: 'Contact details & AdSense configuration successfully updated and live.',
+      });
+    }
+
     const existing = await db.select().from(siteSettings).limit(1);
     let updated;
 
@@ -3282,8 +3453,150 @@ app.put('/api/admin/settings/contact', requireAuth, requireRole(['admin', 'edito
       message: 'Contact details & AdSense configuration successfully updated and live.',
     });
   } catch (error: any) {
-    console.error('Error updating contact settings:', error);
-    res.status(500).json({ error: error.message || 'Failed to update contact settings' });
+    console.warn('Error updating contact settings in DB, using dataStore fallback:', error);
+    try {
+      const updatedSettings = dataStore.updateSettings(req.body);
+      apiCache.invalidatePrefix('settings:');
+      return res.json({
+        settings: updatedSettings,
+        message: 'Contact details & AdSense configuration successfully updated and live.',
+      });
+    } catch {
+      res.status(500).json({ error: error.message || 'Failed to update contact settings' });
+    }
+  }
+});
+
+// -----------------------------------------------------------------------------
+// ADMIN CMS: WEBSITE LOGO UPLOAD & CONFIGURATION
+// -----------------------------------------------------------------------------
+app.get('/api/admin/settings/logo', async (_req: Request, res: Response) => {
+  const currentSettings = isPostgresConfigured
+    ? (await db.select({ logoUrl: siteSettings.logoUrl }).from(siteSettings).limit(1).catch(() => []))[0]
+    : dataStore.getSettings();
+  const logoUrl = currentSettings?.logoUrl || '/trademark-logo.jpg';
+  res.json({ logoUrl });
+});
+
+app.put('/api/admin/settings/logo', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { logoUrl } = req.body;
+    if (!logoUrl || typeof logoUrl !== 'string') {
+      return res.status(400).json({ error: 'Valid logoUrl is required' });
+    }
+
+    const cleanLogoUrl = logoUrl.trim();
+
+    // 1. Update dataStore (guarantees local persistence and immediate fallback availability)
+    dataStore.updateLogo(cleanLogoUrl);
+
+    // 2. Update PostgreSQL if configured
+    if (isPostgresConfigured) {
+      try {
+        const existing = await db.select().from(siteSettings).limit(1);
+        if (existing.length === 0) {
+          await db.insert(siteSettings).values({ logoUrl: cleanLogoUrl });
+        } else {
+          await db.update(siteSettings).set({ logoUrl: cleanLogoUrl, updatedAt: new Date() }).where(eq(siteSettings.id, existing[0].id));
+        }
+      } catch (dbErr) {
+        console.warn('Postgres logo update notice (fallback active):', dbErr);
+      }
+    }
+
+    // Invalidate cached contact/settings
+    apiCache.invalidatePrefix('settings:');
+
+    res.json({ success: true, logoUrl: cleanLogoUrl, message: 'Website logo updated successfully.' });
+  } catch (error: any) {
+    console.error('Error updating website logo:', error);
+    res.status(500).json({ error: error.message || 'Failed to update website logo' });
+  }
+});
+
+app.post('/api/admin/upload-logo', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { fileName, mimeType, base64Data } = req.body;
+    if (!base64Data || !mimeType) {
+      return res.status(400).json({ error: 'base64Data and mimeType are required' });
+    }
+
+    const allowedMimes: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/svg+xml': '.svg',
+    };
+
+    const ext = allowedMimes[String(mimeType).toLowerCase()];
+    if (!ext) {
+      return res.status(400).json({ error: 'Invalid logo format. Allowed formats: PNG, JPG, JPEG, WebP, SVG' });
+    }
+
+    const cleanBase64 = String(base64Data).replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Logo exceeds maximum 5MB size limit' });
+    }
+
+    const uploadsDir = path.resolve(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const safeBaseName = (fileName || 'logo')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 30) || 'logo';
+    const uniqueFileName = `${safeBaseName}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+    const filePath = path.join(uploadsDir, uniqueFileName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/${uniqueFileName}`;
+
+    // Update dataStore
+    dataStore.updateLogo(publicUrl);
+
+    // Update PostgreSQL if configured
+    if (isPostgresConfigured) {
+      try {
+        const existing = await db.select().from(siteSettings).limit(1);
+        if (existing.length === 0) {
+          await db.insert(siteSettings).values({ logoUrl: publicUrl });
+        } else {
+          await db.update(siteSettings).set({ logoUrl: publicUrl, updatedAt: new Date() }).where(eq(siteSettings.id, existing[0].id));
+        }
+
+        await db.insert(media).values({
+          fileName: uniqueFileName,
+          fileUrl: publicUrl,
+          mimeType,
+          sizeBytes: buffer.length,
+          altText: `Official Website Logo: ${fileName || 'Logo'}`,
+          uploadedById: req.user?.id,
+        });
+      } catch (dbErr) {
+        console.warn('Postgres upload logo record notice:', dbErr);
+      }
+    }
+
+    // Invalidate cached contact/settings
+    apiCache.invalidatePrefix('settings:');
+
+    res.status(201).json({
+      success: true,
+      logoUrl: publicUrl,
+      url: publicUrl,
+      fileName: uniqueFileName,
+      sizeBytes: buffer.length,
+      mimeType,
+      message: 'Website logo uploaded and applied successfully',
+    });
+  } catch (err: any) {
+    console.error('Error uploading logo:', err);
+    res.status(500).json({ error: err.message || 'Failed to upload logo image' });
   }
 });
 

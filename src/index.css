@@ -168,10 +168,14 @@
 
 html, html.light {
   color-scheme: light;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 html.dark {
   color-scheme: dark;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -179,6 +183,9 @@ body {
   color: var(--color-text);
   font-family: var(--font-body), serif;
   transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
 }
 
 html.dark body {

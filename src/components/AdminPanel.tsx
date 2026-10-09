@@ -36,13 +36,16 @@ import { KeywordsManager } from './admin/KeywordsManager';
 import { ContactSettingsManager } from './admin/ContactSettingsManager';
 import { VideoLearningManager } from './admin/VideoLearningManager';
 import { AdminCredentialsManager } from './admin/AdminCredentialsManager';
+import { WebsiteLogoManager } from './admin/WebsiteLogoManager';
 import { AdminLayout, type AdminTab } from './admin/AdminLayout';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 interface AdminPanelProps {
   onNavigate: (path: string) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
+  const { logoUrl } = useSiteSettings();
   // Auth state - strictly start with empty inputs so default credentials are never exposed
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -349,12 +352,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       const d = await r.json();
       setArticlesList(d.articles || []);
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error saving article');
     }
   };
 
   const handleDeleteArticle = async (id: number) => {
-    if (!confirm('Are you sure you want to permanently delete this article?')) return;
     try {
       const res = await fetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -362,7 +364,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         setArticlesList((prev) => prev.filter((a) => a.id !== id));
       }
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error deleting article');
     }
   };
 
@@ -438,14 +440,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       const d = await r.json();
       setTopicsList(d.topics || []);
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error saving topic');
     }
   };
 
   const handleConnectTopics = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sourceTopicId || !targetTopicId || sourceTopicId === targetTopicId) {
-      alert('Select two different canonical topics to connect.');
+      notify('Select two different canonical topics to connect.');
       return;
     }
     try {
@@ -464,7 +466,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       setSourceTopicId('');
       setTargetTopicId('');
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error connecting topics');
     }
   };
 
@@ -532,12 +534,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
       const d = await r.json();
       setAdsList(d.ads || []);
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error saving ad');
     }
   };
 
   const handleDeleteAd = async (id: number) => {
-    if (!confirm('Delete this advertisement?')) return;
     try {
       const res = await fetch(`/api/admin/ads/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -546,7 +547,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         window.dispatchEvent(new Event('vastu_ritam_ads_updated'));
       }
     } catch (err: any) {
-      alert(err.message);
+      notify(err.message || 'Error deleting ad');
     }
   };
 
@@ -571,7 +572,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
         <div className="max-w-md w-full p-8 sm:p-10 rounded-3xl bg-white border-2 border-amber-400/80 shadow-2xl relative z-10 space-y-6">
           <div className="text-center">
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500 mx-auto mb-4 bg-white p-1.5 shadow-md">
-              <img src="/trademark-logo.jpg" alt="Vastu Ritam Logo" className="w-full h-full object-contain" />
+              <img src={logoUrl || "/trademark-logo.jpg"} alt="Vastu Ritam Logo" className="w-full h-full object-contain" />
             </div>
             <div className="inline-block px-3 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono text-[10px] font-bold tracking-wider uppercase border border-amber-300 mb-2">
               Strict Admin Portal · Authorized Access Only
@@ -1230,6 +1231,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
           {/* TAB 8: ADMIN CONTACT DETAILS & CHANNELS */}
           {activeTab === 'contact' && (
             <ContactSettingsManager
+              userRole={currentUser.role}
+              onNotification={(msg) => notify(msg)}
+            />
+          )}
+
+          {/* TAB: WEBSITE LOGO SETTING */}
+          {activeTab === 'logo' && (
+            <WebsiteLogoManager
               userRole={currentUser.role}
               onNotification={(msg) => notify(msg)}
             />

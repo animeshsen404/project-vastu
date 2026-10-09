@@ -15,6 +15,7 @@ import {
 import { AdBanner } from './AdBanner';
 import { AdContainer } from './AdContainer';
 import { FolioReveal } from './FolioReveal';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 interface ArticleData {
   id: number;
@@ -52,6 +53,7 @@ interface ArticleViewProps {
 }
 
 export const ArticleView: React.FC<ArticleViewProps> = ({ slug, onNavigate }) => {
+  const { logoUrl } = useSiteSettings();
   const [article, setArticle] = useState<ArticleData | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<any[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<any[]>([]);
@@ -416,7 +418,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({ slug, onNavigate }) =>
                 <div className="mt-8 p-5 rounded-2xl bg-[var(--color-pink-tint)]/40 border border-[var(--color-border)] flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500 bg-white shrink-0">
                     <img
-                      src="/trademark-logo.jpg"
+                      src={logoUrl || "/trademark-logo.jpg"}
                       alt="Vastu Ritam Acharya"
                       className="w-full h-full object-cover"
                       onError={(e) => {
