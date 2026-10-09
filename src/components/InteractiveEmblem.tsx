@@ -106,15 +106,18 @@ export const InteractiveEmblem: React.FC<InteractiveEmblemProps> = ({ initialAct
               viewBox="0 0 400 400"
               className="absolute inset-4 sm:inset-5 w-[calc(100%-2rem)] sm:w-[calc(100%-2.5rem)] h-[calc(100%-2rem)] sm:h-[calc(100%-2.5rem)] pointer-events-auto"
             >
-              {/* Hotspot 1: The Blooming Sacred Lotus (Padma) */}
+              {/* Hotspot 1: The Blooming Sacred Lotus (Padma) in North-East (Ishanya) */}
               <g
                 onClick={() => setActiveSectionId('lotus')}
                 className="cursor-pointer"
+                role="button"
+                aria-label="The Lotus (पद्म) - North-East (Ishanya)"
               >
+                <title>The Lotus (पद्म) - North-East (Ishanya)</title>
                 <circle
-                  cx="200"
-                  cy="75"
-                  r="52"
+                  cx="294"
+                  cy="69"
+                  r="42"
                   fill={activeSectionId === 'lotus' ? 'rgba(232, 138, 22, 0.3)' : 'transparent'}
                   stroke={activeSectionId === 'lotus' ? '#EA580C' : 'rgba(212, 167, 44, 0.4)'}
                   strokeWidth={activeSectionId === 'lotus' ? '3' : '1.5'}
