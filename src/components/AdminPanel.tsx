@@ -35,6 +35,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { KeywordsManager } from './admin/KeywordsManager';
 import { ContactSettingsManager } from './admin/ContactSettingsManager';
 import { VideoLearningManager } from './admin/VideoLearningManager';
+import { HandbookManager } from './admin/HandbookManager';
 import { AdminCredentialsManager } from './admin/AdminCredentialsManager';
 import { WebsiteLogoManager } from './admin/WebsiteLogoManager';
 import { AdminLayout, type AdminTab } from './admin/AdminLayout';
@@ -1028,6 +1029,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onNavigate }) => {
               userRole={currentUser?.role || 'editor'}
               onNotification={(msg) => notify(msg)}
             />
+          )}
+
+          {/* TAB: HANDBOOK MANAGEMENT */}
+          {activeTab === 'handbooks' && (
+            <HandbookManager />
           )}
 
           {/* TAB 6: ADVERTISEMENT CMS */}

@@ -343,3 +343,47 @@ export const videoLearningRelations = relations(videoLearning, ({ one }) => ({
   }),
 }));
 
+// 17. Handbooks (Classical Handbooks & Reference Guides Management)
+export const handbooks = pgTable('handbooks', {
+  id: serial('id').primaryKey(),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  subtitle: text('subtitle'),
+  summary: text('summary').notNull(),
+  targetAudience: text('target_audience').notNull(),
+  pages: integer('pages').default(40).notNull(),
+  topicsList: text('topics_list'), // JSON string array of topics
+  pdfFilePath: text('pdf_file_path'), // Protected file path on disk
+  pdfFileName: text('pdf_file_name'), // Original uploaded or generated file name
+  pdfSizeBytes: integer('pdf_size_bytes'),
+  mimeType: text('mime_type').default('application/pdf'),
+  status: text('status').notNull().default('published'), // 'published' | 'draft' | 'archived'
+  displayOrder: integer('display_order').default(0).notNull(),
+  downloadCount: integer('download_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('handbooks_slug_idx').on(table.slug),
+  index('handbooks_status_idx').on(table.status),
+  index('handbooks_order_idx').on(table.displayOrder),
+]);
+
+// 18. Handbook Access Leads (Visitor contact submissions for reading access)
+export const handbookLeads = pgTable('handbook_leads', {
+  id: serial('id').primaryKey(),
+  handbookId: text('handbook_id').notNull(),
+  handbookTitle: text('handbook_title').notNull(),
+  fullName: text('full_name'),
+  email: text('email').notNull(),
+  mobileNumber: text('mobile_number').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  status: text('status').default('verified').notNull(), // 'verified' | 'contacted' | 'consultation_scheduled'
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('handbook_leads_email_idx').on(table.email),
+  index('handbook_leads_created_at_idx').on(table.createdAt),
+  index('handbook_leads_handbook_idx').on(table.handbookId),
+]);
+

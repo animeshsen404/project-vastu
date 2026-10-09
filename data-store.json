@@ -322,6 +322,33 @@
   "media": [],
   "auditLogs": [
     {
+      "id": 5,
+      "userId": 1,
+      "action": "UPDATE_HANDBOOK_METADATA",
+      "entityType": "HANDBOOK",
+      "entityId": "1791535539689",
+      "details": "Updated metadata for Commercial Sanctuaries & Corporate Vastu (Status: published)",
+      "createdAt": "2026-10-09T08:45:39.842Z"
+    },
+    {
+      "id": 4,
+      "userId": 1,
+      "action": "CREATE_HANDBOOK",
+      "entityType": "HANDBOOK",
+      "entityId": "1791535539689",
+      "details": "Created new handbook \"Commercial Sanctuaries & Corporate Vastu\" in mode: draft",
+      "createdAt": "2026-10-09T08:45:39.692Z"
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "action": "REPLACE_HANDBOOK_PDF",
+      "entityType": "HANDBOOK",
+      "entityId": "2",
+      "details": "Replaced handbook PDF with homebuyers-updated-shastric-handbook-202_1791534225690_392yk.pdf (0.01 MB)",
+      "createdAt": "2026-10-09T08:23:45.691Z"
+    },
+    {
       "id": 2,
       "userId": 1,
       "action": "DELETE_ARTICLE",
@@ -338,6 +365,137 @@
       "entityId": "4",
       "details": "Created article \"Test Architectural Treatise\" with status \"published\"",
       "createdAt": "2026-10-08T06:13:39.514Z"
+    }
+  ],
+  "handbooks": [
+    {
+      "id": "1",
+      "slug": "vastu-for-contemporary-architects",
+      "title": "Vastu for Contemporary Architects",
+      "subtitle": "A Field Guide to Seamless Integration with Modern CAD & BIM Workflows",
+      "targetAudience": "Architects & Urban Planners",
+      "pages": 48,
+      "topics": [
+        "Solar Vector Mapping",
+        "Brahmasthan in Multi-Story Apartments",
+        "Facade Openings vs Dik-Bala",
+        "Non-Destructive Layout Optimization"
+      ],
+      "summary": "Written specifically for registered architects who want to respect client Vastu sentiments while preserving aesthetic integrity and building code compliance.",
+      "pdfFilePath": "/app/applet/protected_storage/handbooks/vastu-for-contemporary-architects-official-handbook.pdf",
+      "pdfFileName": "vastu-for-contemporary-architects-official-handbook.pdf",
+      "pdfSizeBytes": 9600,
+      "status": "published",
+      "displayOrder": 1,
+      "downloadCount": 2,
+      "createdAt": "2026-10-09T08:21:57.358Z",
+      "updatedAt": "2026-10-09T08:21:57.358Z"
+    },
+    {
+      "id": "2",
+      "slug": "homebuyers-vastu-checklist",
+      "title": "The Informed Homebuyer's Vastu Checklist",
+      "subtitle": "What to Observe Before Signing Property Deeds",
+      "targetAudience": "Home Buyers & Real Estate Investors",
+      "pages": 36,
+      "topics": [
+        "Evaluating Main Entrance Pada",
+        "Slope & Drainage Verification",
+        "Surrounding Negative Structures",
+        "Separating Remediable Flaws from Critical Defects"
+      ],
+      "summary": "A transparent, easy-to-follow guide to protect your life savings from high-risk property purchases without being misled by sensationalist claims.",
+      "pdfFilePath": "/app/applet/protected_storage/handbooks/homebuyers-updated-shastric-handbook-202_1791534225690_392yk.pdf",
+      "pdfFileName": "homebuyers-updated-shastric-handbook-202_1791534225690_392yk.pdf",
+      "pdfSizeBytes": 9434,
+      "status": "published",
+      "displayOrder": 2,
+      "downloadCount": 1,
+      "createdAt": "2026-10-09T08:21:57.358Z",
+      "updatedAt": "2026-10-09T08:23:45.690Z"
+    },
+    {
+      "id": "3",
+      "slug": "industrial-factory-spatial-harmonics",
+      "title": "Industrial & Factory Spatial Harmonics",
+      "subtitle": "Aligning Heavy Machinery, Substations, and Inventory Logistics",
+      "targetAudience": "Plant Managers & Civil Engineers",
+      "pages": 54,
+      "topics": [
+        "Earth-Bearing Capacity in Nairutya",
+        "Hazardous Chemical Storage in Agni",
+        "Raw Material Inflow vs Finished Goods Outflow",
+        "Workforce Well-being"
+      ],
+      "summary": "A practical technical treatise for manufacturing facilities, warehouse logistics, and corporate processing plants.",
+      "pdfFilePath": "/app/applet/protected_storage/handbooks/industrial-factory-spatial-harmonics-official-handbook.pdf",
+      "pdfFileName": "industrial-factory-spatial-harmonics-official-handbook.pdf",
+      "pdfSizeBytes": 9000,
+      "status": "published",
+      "displayOrder": 3,
+      "downloadCount": 0,
+      "createdAt": "2026-10-09T08:21:57.358Z",
+      "updatedAt": "2026-10-09T08:21:57.358Z"
+    },
+    {
+      "id": "1791535539689",
+      "slug": "commercial-sanctuaries-corporate-vastu",
+      "title": "Commercial Sanctuaries & Corporate Vastu",
+      "subtitle": "Energy Balancing for Corporate Headquarters & Tech Parks",
+      "targetAudience": "Corporate Developers & Facility Heads",
+      "pages": 44,
+      "topics": [
+        "Server Room Agneya Alignment",
+        "Director Cabin Nairutya Anchoring",
+        "Open Plan Workstation Harmonics"
+      ],
+      "summary": "Technical canonical field guidelines for planning headquarters, executive boardrooms, server banks, and employee wellness zones.",
+      "pdfFilePath": "/app/applet/protected_storage/handbooks/commercial-sanctuaries-corporate-vastu-official-handbook.pdf",
+      "pdfFileName": "commercial-sanctuaries-corporate-vastu-official-handbook.pdf",
+      "pdfSizeBytes": 5405,
+      "status": "published",
+      "displayOrder": 99,
+      "downloadCount": 0,
+      "createdAt": "2026-10-09T08:45:39.689Z",
+      "updatedAt": "2026-10-09T08:45:39.842Z"
+    }
+  ],
+  "handbookLeads": [
+    {
+      "id": 3,
+      "handbookId": "1",
+      "handbookTitle": "Vastu for Contemporary Architects",
+      "fullName": "Vivek Bassi",
+      "email": "vivek@fort.com",
+      "mobileNumber": "+919968356525",
+      "ipAddress": "144.79.101.2, 169.254.169.126",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+      "status": "verified",
+      "createdAt": "2026-10-09T08:31:52.615Z"
+    },
+    {
+      "id": 2,
+      "handbookId": "2",
+      "handbookTitle": "The Informed Homebuyer's Vastu Checklist",
+      "fullName": "Vivek Bassi",
+      "email": "vivek@fort.com",
+      "mobileNumber": "+919968356525",
+      "ipAddress": "144.79.101.2, 169.254.169.126",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+      "status": "verified",
+      "createdAt": "2026-10-09T08:30:55.926Z"
+    },
+    {
+      "id": 1,
+      "handbookId": "1",
+      "handbookTitle": "Vastu for Contemporary Architects",
+      "fullName": "Ar. Rajesh Sharma",
+      "email": "rajesh.sharma@archstudio.in",
+      "mobileNumber": "+91 98200 98200",
+      "ipAddress": "127.0.0.1",
+      "userAgent": "curl/7.88.1",
+      "status": "verified",
+      "createdAt": "2026-10-09T08:22:33.143Z"
     }
   ]
 }

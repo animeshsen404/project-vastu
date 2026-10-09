@@ -34,6 +34,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AdvertisementBanner } from './AdBanner';
+import { HandbookAccessModal } from './HandbookAccessModal';
+import { HandbookReaderModal } from './HandbookReaderModal';
 import { useTheme } from '../context/ThemeContext';
 
 interface GyanKoshSectionProps {
@@ -63,6 +65,33 @@ export const GyanKoshSection: React.FC<GyanKoshSectionProps> = ({
   const [activeVideoModal, setActiveVideoModal] = useState<any | null>(null);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
   const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>('All');
+
+  // Handbook Client Access & Embedded Reader State
+  const [handbooksList, setHandbooksList] = useState<Handbook[]>(HANDBOOKS_DATA);
+  const [selectedHandbookForAccess, setSelectedHandbookForAccess] = useState<Handbook | null>(null);
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [activeReadingSession, setActiveReadingSession] = useState<{
+    streamUrl: string;
+    handbook: any;
+  } | null>(null);
+
+  const fetchHandbooks = async () => {
+    try {
+      const res = await fetch('/api/handbooks');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.handbooks && Array.isArray(data.handbooks) && data.handbooks.length > 0) {
+          setHandbooksList(data.handbooks);
+        }
+      }
+    } catch {
+      // Keep HANDBOOKS_DATA fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchHandbooks();
+  }, []);
 
   const fetchDatabaseVideos = async () => {
     try {
@@ -698,7 +727,9 @@ export const GyanKoshSection: React.FC<GyanKoshSectionProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {HANDBOOKS_DATA.map((hb, idx) => {
+                {handbooksList
+                  .filter((hb: any) => !hb.status || hb.status === 'published')
+                  .map((hb, idx) => {
                   const cardThemes = [
                     isLight ? 'bg-white text-[var(--color-text-heading)] border-[var(--color-border)]' : 'bg-[#E8D3A8] text-[#2D1B14] border-[#D4A72C]',
                     isLight ? 'bg-[#FFF7F2] text-amber-950 border-[var(--color-border)]/80' : 'bg-[#B94E2C] text-[#FFF7ED] border-[#D4A72C]',
@@ -721,26 +752,30 @@ export const GyanKoshSection: React.FC<GyanKoshSectionProps> = ({
                         <h3 className="font-['Cinzel_Decorative'] text-lg font-black leading-snug">
                           {hb.title}
                         </h3>
-                        <p className={`font-['Marcellus'] text-xs italic ${isLightCard ? 'text-[#9A3412]' : 'text-[#FDE68A]'}`}>
-                          {hb.subtitle}
-                        </p>
+                        {hb.subtitle && (
+                          <p className={`font-['Marcellus'] text-xs italic ${isLightCard ? 'text-[#9A3412]' : 'text-[#FDE68A]'}`}>
+                            {hb.subtitle}
+                          </p>
+                        )}
                         <p className={`font-['Marcellus'] text-xs leading-relaxed ${isLight ? 'text-[var(--color-text-body)]' : ''}`}>
                           {hb.summary}
                         </p>
 
-                        <div className="space-y-1 pt-2">
-                          <span className={`text-[11px] font-serif font-bold block ${isLightCard ? 'text-[var(--color-text-heading)]' : ''}`}>
-                            Included Modules:
-                          </span>
-                          <ul className="text-xs font-['Marcellus'] space-y-1">
-                            {hb.topics.map((t, topicIdx) => (
-                              <li key={topicIdx} className="flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full ${isLightCard ? 'bg-[#6B1F1F]' : 'bg-[#D4A72C]'}`} />
-                                <span>{t}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        {Array.isArray(hb.topics) && hb.topics.length > 0 && (
+                          <div className="space-y-1 pt-2">
+                            <span className={`text-[11px] font-serif font-bold block ${isLightCard ? 'text-[var(--color-text-heading)]' : ''}`}>
+                              Included Modules:
+                            </span>
+                            <ul className="text-xs font-['Marcellus'] space-y-1">
+                              {hb.topics.map((t, topicIdx) => (
+                                <li key={topicIdx} className="flex items-center gap-1.5">
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isLightCard ? 'bg-[#6B1F1F]' : 'bg-[#D4A72C]'}`} />
+                                  <span>{t}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
 
                       <div className={`pt-4 border-t text-xs font-serif flex items-center justify-between ${
@@ -748,8 +783,11 @@ export const GyanKoshSection: React.FC<GyanKoshSectionProps> = ({
                       }`}>
                         <span>{hb.pages} Folio Pages</span>
                         <button
-                          onClick={() => alert(`Opening ${hb.title}. Complete handbook text will be displayed in repository.`)}
-                          className={`px-4 py-1.5 rounded-xl font-bold border transition-colors cursor-pointer ${
+                          onClick={() => {
+                            setSelectedHandbookForAccess(hb);
+                            setIsAccessModalOpen(true);
+                          }}
+                          className={`px-4 py-1.5 rounded-xl font-bold border transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 ${
                             isLight
                               ? 'bg-[#6B1F1F] text-[#FFF7ED] border-[#D4A72C] hover:bg-[#B94E2C]'
                               : 'bg-[#E88A16] text-[#2D1B14] border-[#D4A72C] hover:bg-[#D97706]'
@@ -1167,6 +1205,31 @@ export const GyanKoshSection: React.FC<GyanKoshSectionProps> = ({
           )}
         </div>
       </div>
+
+      {/* Client Handbook Access & Form Validation Modal */}
+      <HandbookAccessModal
+        isOpen={isAccessModalOpen}
+        handbook={selectedHandbookForAccess}
+        onClose={() => {
+          setIsAccessModalOpen(false);
+          setSelectedHandbookForAccess(null);
+        }}
+        onSuccess={(accessData) => {
+          setIsAccessModalOpen(false);
+          setActiveReadingSession({
+            streamUrl: accessData.streamUrl,
+            handbook: accessData.handbook,
+          });
+        }}
+      />
+
+      {/* Embedded Client PDF Reader Modal */}
+      <HandbookReaderModal
+        isOpen={activeReadingSession !== null}
+        streamUrl={activeReadingSession?.streamUrl || ''}
+        handbook={activeReadingSession?.handbook || null}
+        onClose={() => setActiveReadingSession(null)}
+      />
       </FolioReveal>
     </div>
   );

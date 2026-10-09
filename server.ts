@@ -3,6 +3,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { db, isPostgresConfigured } from './src/db/index.ts';
@@ -24,7 +25,14 @@ import {
   redirects,
   siteSettings,
   videoLearning,
+  handbooks,
+  handbookLeads,
 } from './src/db/schema.ts';
+import {
+  ensureHandbookPdf,
+  initializeAllHandbookPdfs,
+  INITIAL_HANDBOOKS_SEED,
+} from './src/lib/handbookPdfGenerator.ts';
 import { parseAndValidateVideoUrl, generateVideoSlug } from './src/lib/videoUtils.ts';
 import { eq, desc, asc, and, or, ilike, sql, inArray } from 'drizzle-orm';
 import {
@@ -3601,9 +3609,700 @@ app.post('/api/admin/upload-logo', requireAuth, requireRole(['admin', 'editor'])
 });
 
 // -----------------------------------------------------------------------------
+// HANDBOOK MANAGEMENT & SECURE CLIENT ACCESS CMS
+// -----------------------------------------------------------------------------
+const HANDBOOK_SECRET = process.env.HANDBOOK_SECRET || 'vastu-ritam-handbook-sacred-key-2026';
+const PROTECTED_STORAGE_DIR = path.resolve(process.cwd(), 'protected_storage', 'handbooks');
+
+function generateHandbookAccessToken(handbookId: string, email: string): string {
+  const expiresAt = Date.now() + 2 * 60 * 60 * 1000; // 2 hours validity
+  const payload = `${handbookId}:${email}:${expiresAt}`;
+  const hmac = crypto.createHmac('sha256', HANDBOOK_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${hmac}`).toString('base64url');
+}
+
+function verifyHandbookAccessToken(token: string, expectedHandbookId?: string): { valid: boolean; email?: string } {
+  try {
+    if (!token) return { valid: false };
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 4) return { valid: false };
+    const [handbookId, email, expiresAtStr, hmac] = parts;
+    const expiresAt = parseInt(expiresAtStr, 10);
+    if (Date.now() > expiresAt) return { valid: false };
+    if (expectedHandbookId && handbookId !== expectedHandbookId) return { valid: false };
+    const expectedPayload = `${handbookId}:${email}:${expiresAtStr}`;
+    const expectedHmac = crypto.createHmac('sha256', HANDBOOK_SECRET).update(expectedPayload).digest('hex');
+    if (hmac !== expectedHmac) return { valid: false };
+    return { valid: true, email };
+  } catch {
+    return { valid: false };
+  }
+}
+
+// 1. Public: Get published handbooks
+app.get('/api/handbooks', async (_req: Request, res: Response) => {
+  try {
+    if (isPostgresConfigured) {
+      try {
+        const rows = await db
+          .select()
+          .from(handbooks)
+          .where(eq(handbooks.status, 'published'))
+          .orderBy(asc(handbooks.displayOrder));
+        if (rows.length > 0) {
+          const formatted = rows.map((r) => ({
+            id: String(r.id),
+            slug: r.slug,
+            title: r.title,
+            subtitle: r.subtitle || '',
+            summary: r.summary,
+            targetAudience: r.targetAudience,
+            pages: r.pages,
+            topics: r.topicsList ? JSON.parse(r.topicsList) : [],
+            status: r.status,
+            displayOrder: r.displayOrder,
+            downloadCount: r.downloadCount,
+          }));
+          return res.json({ handbooks: formatted });
+        }
+      } catch (dbErr) {
+        console.warn('Postgres handbooks fetch notice (fallback active):', dbErr);
+      }
+    }
+
+    const items = dataStore.getHandbooks(true);
+    res.json({ handbooks: items });
+  } catch (error: any) {
+    console.error('Error fetching handbooks:', error);
+    res.status(500).json({ error: 'Failed to fetch handbooks' });
+  }
+});
+
+// 2. Client: Request access to read a handbook (requires validated email & phone)
+app.post('/api/handbooks/access-request', async (req: Request, res: Response) => {
+  try {
+    const { handbookId, email, mobileNumber, fullName } = req.body;
+
+    if (!handbookId || typeof handbookId !== 'string') {
+      return res.status(400).json({ error: 'Valid handbook identifier is required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Please provide a valid email address (e.g., scholar@example.com)' });
+    }
+
+    // Validate phone number format (at least 10 digits, optional country code)
+    const rawMobile = String(mobileNumber || '').trim();
+    const digitsOnly = rawMobile.replace(/\D/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+      return res.status(400).json({ error: 'Please provide a valid mobile number with at least 10 digits' });
+    }
+
+    // Find handbook
+    const hb = dataStore.getHandbookById(handbookId);
+    if (!hb) {
+      return res.status(404).json({ error: 'Requested handbook could not be found' });
+    }
+
+    // Ensure handbook is published for public visitors
+    if (hb.status !== 'published') {
+      return res.status(403).json({ error: 'This handbook is currently in draft mode and has not yet been published publicly.' });
+    }
+
+    const cleanName = typeof fullName === 'string' ? fullName.trim() : undefined;
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    // Store lead in dataStore
+    const newLead = dataStore.addHandbookLead({
+      handbookId: hb.id,
+      handbookTitle: hb.title,
+      fullName: cleanName,
+      email: cleanEmail,
+      mobileNumber: rawMobile,
+      ipAddress,
+      userAgent,
+      status: 'verified',
+    });
+
+    dataStore.incrementHandbookDownload(hb.id);
+
+    // Also persist in Postgres if configured
+    if (isPostgresConfigured) {
+      try {
+        await db.insert(handbookLeads).values({
+          handbookId: hb.id,
+          handbookTitle: hb.title,
+          fullName: cleanName,
+          email: cleanEmail,
+          mobileNumber: rawMobile,
+          ipAddress,
+          userAgent,
+          status: 'verified',
+        });
+        await db
+          .update(handbooks)
+          .set({
+            downloadCount: sql`${handbooks.downloadCount} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(handbooks.slug, hb.slug));
+      } catch (dbErr) {
+        console.warn('Postgres handbook lead insert notice:', dbErr);
+      }
+    }
+
+    // Generate cryptographic access token
+    const token = generateHandbookAccessToken(hb.id, cleanEmail);
+    const streamUrl = `/api/handbooks/stream/${encodeURIComponent(hb.id)}?token=${encodeURIComponent(token)}`;
+
+    res.status(200).json({
+      success: true,
+      message: 'Access granted. Opening handbook reader...',
+      token,
+      streamUrl,
+      handbook: {
+        id: hb.id,
+        title: hb.title,
+        subtitle: hb.subtitle,
+        pages: hb.pages,
+        targetAudience: hb.targetAudience,
+      },
+      leadId: newLead.id,
+    });
+  } catch (err: any) {
+    console.error('Error in handbook access request:', err);
+    res.status(500).json({ error: err.message || 'Failed to process handbook access request' });
+  }
+});
+
+// 3. Secure Stream: Protected PDF Viewer Stream
+// Only accessible with a valid HMAC access token or authenticated admin session
+app.get('/api/handbooks/stream/:id', async (req: Request, res: Response) => {
+  try {
+    const handbookId = req.params.id;
+    const token = (req.query.token as string) || '';
+
+    // Check if user has admin auth via cookie or Bearer header
+    let isAdminAuthorized = false;
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.session_token;
+    if (authHeader?.startsWith('Bearer ') || cookieToken) {
+      const rawTok = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : cookieToken;
+      try {
+        const decoded = Buffer.from(rawTok, 'base64').toString('utf8');
+        const [userId, exp] = decoded.split(':');
+        if (userId && exp && parseInt(exp, 10) > Date.now()) {
+          const user = dataStore.getUserById(parseInt(userId, 10));
+          if (user && (user.role === 'admin' || user.role === 'editor')) {
+            isAdminAuthorized = true;
+          }
+        }
+      } catch {
+        // Not admin, will fallback to token verification
+      }
+    }
+
+    if (!isAdminAuthorized) {
+      const tokenVerification = verifyHandbookAccessToken(token, handbookId);
+      if (!tokenVerification.valid) {
+        return res.status(403).json({
+          error: 'Direct access denied. Please request access by providing your contact information.',
+        });
+      }
+    }
+
+    // Find handbook
+    const hb = dataStore.getHandbookById(handbookId);
+    if (!hb) {
+      return res.status(404).json({ error: 'Handbook not found' });
+    }
+
+    let targetFilePath = hb.pdfFilePath;
+
+    // Check if file exists, if not generate default from seed
+    if (!targetFilePath || !fs.existsSync(targetFilePath)) {
+      const matchingSeed =
+        INITIAL_HANDBOOKS_SEED.find((s) => s.id === hb.id || s.slug === hb.slug) ||
+        INITIAL_HANDBOOKS_SEED[0];
+      const ensured = await ensureHandbookPdf(matchingSeed);
+      targetFilePath = ensured.filePath;
+      dataStore.updateHandbook(hb.id, {
+        pdfFilePath: ensured.filePath,
+        pdfFileName: ensured.fileName,
+        pdfSizeBytes: ensured.fileSizeBytes,
+      });
+    }
+
+    if (!fs.existsSync(targetFilePath)) {
+      return res.status(404).json({ error: 'Handbook document file is unavailable' });
+    }
+
+    const safeTitle = (hb.title || 'Vastu-Ritam-Handbook').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Vastu-Ritam-${safeTitle}.pdf"`);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    const fileStream = fs.createReadStream(targetFilePath);
+    fileStream.pipe(res);
+  } catch (err: any) {
+    console.error('Error streaming handbook PDF:', err);
+    res.status(500).json({ error: 'Failed to stream handbook file' });
+  }
+});
+
+// 4. Admin: List all handbooks with management stats
+app.get('/api/admin/handbooks', requireAuth, requireRole(['admin', 'editor']), async (_req: AuthRequest, res: Response) => {
+  try {
+    const list = dataStore.getHandbooks();
+    const leads = dataStore.getHandbookLeads();
+
+    const enriched = list.map((hb) => {
+      const hbLeads = leads.filter((l) => l.handbookId === hb.id || l.handbookTitle === hb.title);
+      const fileExists = hb.pdfFilePath ? fs.existsSync(hb.pdfFilePath) : false;
+      return {
+        ...hb,
+        fileExists,
+        leadCount: hbLeads.length,
+        hasCustomPdf: Boolean(hb.pdfFileName && !hb.pdfFileName.includes('-official-handbook.pdf')),
+      };
+    });
+
+    res.json({ handbooks: enriched });
+  } catch (err: any) {
+    console.error('Error fetching admin handbooks:', err);
+    res.status(500).json({ error: 'Failed to fetch handbooks list' });
+  }
+});
+
+// 5. Admin: Upload or replace handbook PDF
+app.post('/api/admin/handbooks/upload-pdf', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { handbookId, fileName, mimeType, base64Data } = req.body;
+
+    if (!handbookId || !base64Data) {
+      return res.status(400).json({ error: 'handbookId and base64Data are required' });
+    }
+
+    if (mimeType !== 'application/pdf') {
+      return res.status(400).json({ error: 'Only authentic PDF documents (.pdf) are allowed' });
+    }
+
+    const cleanBase64 = String(base64Data).replace(/^data:application\/pdf;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    // Max 35MB size check
+    if (buffer.length > 35 * 1024 * 1024) {
+      return res.status(400).json({ error: 'PDF file exceeds maximum 35MB size limit' });
+    }
+
+    // Verify PDF Magic Bytes (%PDF-)
+    const pdfHeader = buffer.subarray(0, 5).toString('ascii');
+    if (!pdfHeader.startsWith('%PDF-')) {
+      return res.status(400).json({ error: 'File is not a valid PDF document header' });
+    }
+
+    if (!fs.existsSync(PROTECTED_STORAGE_DIR)) {
+      fs.mkdirSync(PROTECTED_STORAGE_DIR, { recursive: true });
+    }
+
+    const safeBaseName = (fileName || 'handbook')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 40) || 'handbook';
+    const uniqueFileName = `${safeBaseName}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.pdf`;
+    const targetFilePath = path.join(PROTECTED_STORAGE_DIR, uniqueFileName);
+
+    fs.writeFileSync(targetFilePath, buffer);
+
+    const updated = dataStore.updateHandbook(handbookId, {
+      pdfFilePath: targetFilePath,
+      pdfFileName: uniqueFileName,
+      pdfSizeBytes: buffer.length,
+      status: 'published',
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Handbook not found to associate file' });
+    }
+
+    // Log admin audit action
+    dataStore.addAuditLog({
+      userId: req.user?.id,
+      action: 'REPLACE_HANDBOOK_PDF',
+      entityType: 'HANDBOOK',
+      entityId: handbookId,
+      details: `Replaced handbook PDF with ${uniqueFileName} (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`,
+    });
+
+    res.status(200).json({
+      success: true,
+      fileName: uniqueFileName,
+      sizeBytes: buffer.length,
+      handbook: updated,
+      message: 'Handbook PDF successfully uploaded and secured in protected storage.',
+    });
+  } catch (err: any) {
+    console.error('Error uploading handbook PDF:', err);
+    res.status(500).json({ error: err.message || 'Failed to upload handbook PDF' });
+  }
+});
+
+// 6. Admin: Update handbook metadata
+app.put('/api/admin/handbooks/:id', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, summary, targetAudience, pages, topics, status, displayOrder } = req.body;
+
+    const updated = dataStore.updateHandbook(id, {
+      ...(title && { title: title.trim() }),
+      ...(subtitle !== undefined && { subtitle: subtitle.trim() }),
+      ...(summary && { summary: summary.trim() }),
+      ...(targetAudience && { targetAudience: targetAudience.trim() }),
+      ...(pages !== undefined && { pages: Number(pages) }),
+      ...(topics && { topics: Array.isArray(topics) ? topics : [] }),
+      ...(status && { status }),
+      ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Handbook not found' });
+    }
+
+    // Also update PostgreSQL if configured
+    if (isPostgresConfigured) {
+      try {
+        await db
+          .update(handbooks)
+          .set({
+            ...(title && { title: title.trim() }),
+            ...(subtitle !== undefined && { subtitle: subtitle.trim() }),
+            ...(summary && { summary: summary.trim() }),
+            ...(targetAudience && { targetAudience: targetAudience.trim() }),
+            ...(pages !== undefined && { pages: Number(pages) }),
+            ...(topics && { topicsList: JSON.stringify(topics) }),
+            ...(status && { status }),
+            ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
+            updatedAt: new Date(),
+          })
+          .where(or(eq(handbooks.slug, updated.slug), eq(handbooks.slug, id)));
+      } catch (dbErr) {
+        console.warn('Postgres handbook update notice:', dbErr);
+      }
+    }
+
+    dataStore.addAuditLog({
+      userId: req.user?.id,
+      action: 'UPDATE_HANDBOOK_METADATA',
+      entityType: 'HANDBOOK',
+      entityId: id,
+      details: `Updated metadata for ${updated.title} (Status: ${updated.status})`,
+    });
+
+    res.json({ success: true, handbook: updated, message: `Handbook metadata updated successfully (Mode: ${updated.status}).` });
+  } catch (err: any) {
+    console.error('Error updating handbook:', err);
+    res.status(500).json({ error: 'Failed to update handbook' });
+  }
+});
+
+// 7. Admin: Create New Handbook (Mode: draft | published)
+app.post('/api/admin/handbooks', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      title,
+      subtitle,
+      summary,
+      targetAudience,
+      pages,
+      topics,
+      status, // 'published' | 'draft'
+      displayOrder,
+      pdfFileName,
+      pdfBase64,
+    } = req.body;
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'Handbook title is required' });
+    }
+    if (!targetAudience || typeof targetAudience !== 'string' || !targetAudience.trim()) {
+      return res.status(400).json({ error: 'Target audience domain is required' });
+    }
+    if (!summary || typeof summary !== 'string' || !summary.trim()) {
+      return res.status(400).json({ error: 'Treatise summary / scope description is required' });
+    }
+
+    const cleanTitle = title.trim();
+    const cleanSubtitle = (subtitle || '').trim();
+    const cleanAudience = targetAudience.trim();
+    const cleanSummary = summary.trim();
+    const cleanPages = Math.max(1, Number(pages) || 40);
+    const mode = status === 'published' ? 'published' : 'draft';
+    const topicsArr = Array.isArray(topics)
+      ? topics.map((t: string) => String(t).trim()).filter(Boolean)
+      : typeof topics === 'string'
+      ? topics.split(',').map((t: string) => t.trim()).filter(Boolean)
+      : [];
+
+    const slug =
+      cleanTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || `handbook-${Date.now()}`;
+
+    let savedFilePath: string | null = null;
+    let savedFileName: string | null = null;
+    let savedFileSize: number | null = null;
+
+    if (!fs.existsSync(PROTECTED_STORAGE_DIR)) {
+      fs.mkdirSync(PROTECTED_STORAGE_DIR, { recursive: true });
+    }
+
+    // 1. If custom PDF was uploaded during creation
+    if (pdfBase64 && typeof pdfBase64 === 'string') {
+      const cleanBase64 = String(pdfBase64).replace(/^data:application\/pdf;base64,/, '');
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      if (buffer.length > 35 * 1024 * 1024) {
+        return res.status(400).json({ error: 'Uploaded PDF exceeds maximum 35MB size limit' });
+      }
+      const pdfHeader = buffer.subarray(0, 5).toString('ascii');
+      if (!pdfHeader.startsWith('%PDF-')) {
+        return res.status(400).json({ error: 'Uploaded file is not a valid PDF document' });
+      }
+
+      const safeBaseName = (pdfFileName || slug).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'handbook';
+      const uniqueFileName = `custom_${safeBaseName}_${Date.now()}.pdf`;
+      const targetFilePath = path.join(PROTECTED_STORAGE_DIR, uniqueFileName);
+      fs.writeFileSync(targetFilePath, buffer);
+
+      savedFilePath = targetFilePath;
+      savedFileName = uniqueFileName;
+      savedFileSize = buffer.length;
+    } else {
+      // 2. Auto-generate authentic starter monograph PDF for this handbook
+      try {
+        const seed = {
+          id: String(Date.now()),
+          slug,
+          title: cleanTitle,
+          subtitle: cleanSubtitle || 'Authoritative Vedic Architecture Monograph',
+          targetAudience: cleanAudience,
+          pages: cleanPages,
+          topics:
+            topicsArr.length > 0
+              ? topicsArr
+              : ['Spatial Orientation', 'Bio-energetic Grid', 'Proportional Harmony', 'Non-Destructive Adjustments'],
+          summary: cleanSummary,
+          chapters: [
+            {
+              title: 'I. Canonical Foundation & Metaphysical Grid',
+              sanskritTag: 'SHILPA SHASTRA VINYASA',
+              content: [
+                `${cleanTitle} is formulated in strict accordance with classical Vastu Vidya canons, harmonising sacred orientation, geomagnetism, and contemporary structural engineering.`,
+                `This field manual is dedicated to ${cleanAudience}, delineating actionable principles for layout optimization, spatial flow, and environmental equilibrium.`,
+                `By honoring canonical proportions, dwellings cultivate peace, mental clarity, and enduring vitality for all inhabitants.`,
+              ],
+            },
+            {
+              title: 'II. Core Architectural Directives & Practical Guidelines',
+              sanskritTag: 'DIK-BALA EVAM VASTU VIDHANA',
+              content: [
+                `Proper directional weight allocation and fenestrations balance solar wave trajectories and natural airflow across the perimeter.`,
+                cleanSummary,
+                `All structural elements should prioritize biological harmony, natural ventilation, and conscious living.`,
+              ],
+            },
+          ],
+        };
+        const generated = await ensureHandbookPdf(seed);
+        savedFilePath = generated.filePath;
+        savedFileName = generated.fileName;
+        savedFileSize = generated.fileSizeBytes;
+      } catch (genErr) {
+        console.warn('Notice generating starter PDF for new handbook:', genErr);
+      }
+    }
+
+    const newHandbook = dataStore.createHandbook({
+      slug,
+      title: cleanTitle,
+      subtitle: cleanSubtitle,
+      targetAudience: cleanAudience,
+      pages: cleanPages,
+      topics: topicsArr,
+      summary: cleanSummary,
+      pdfFilePath: savedFilePath,
+      pdfFileName: savedFileName,
+      pdfSizeBytes: savedFileSize,
+      status: mode,
+      displayOrder: typeof displayOrder === 'number' ? displayOrder : 99,
+    });
+
+    // Also persist in PostgreSQL if configured
+    if (isPostgresConfigured) {
+      try {
+        await db.insert(handbooks).values({
+          slug,
+          title: cleanTitle,
+          subtitle: cleanSubtitle,
+          summary: cleanSummary,
+          targetAudience: cleanAudience,
+          pages: cleanPages,
+          topicsList: JSON.stringify(topicsArr),
+          pdfFilePath: savedFilePath,
+          pdfFileName: savedFileName,
+          pdfSizeBytes: savedFileSize,
+          status: mode,
+          displayOrder: typeof displayOrder === 'number' ? displayOrder : 99,
+        });
+      } catch (dbErr) {
+        console.warn('Postgres handbook insert notice:', dbErr);
+      }
+    }
+
+    dataStore.addAuditLog({
+      userId: req.user?.id,
+      action: 'CREATE_HANDBOOK',
+      entityType: 'HANDBOOK',
+      entityId: newHandbook.id,
+      details: `Created new handbook "${cleanTitle}" in mode: ${mode}`,
+    });
+
+    res.status(201).json({
+      success: true,
+      handbook: newHandbook,
+      message:
+        mode === 'published'
+          ? `Handbook "${cleanTitle}" created and published publicly on the website.`
+          : `Handbook "${cleanTitle}" created in Draft mode (hidden from public website until published).`,
+    });
+  } catch (err: any) {
+    console.error('Error creating handbook:', err);
+    res.status(500).json({ error: err.message || 'Failed to create handbook' });
+  }
+});
+
+// 8. Admin: Delete a handbook
+app.delete('/api/admin/handbooks/:id', requireAuth, requireRole(['admin']), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = dataStore.getHandbookById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Handbook not found' });
+    }
+
+    dataStore.deleteHandbook(id);
+
+    if (isPostgresConfigured) {
+      try {
+        await db.delete(handbooks).where(or(eq(handbooks.slug, existing.slug), eq(handbooks.slug, id)));
+      } catch (dbErr) {
+        console.warn('Postgres handbook delete notice:', dbErr);
+      }
+    }
+
+    dataStore.addAuditLog({
+      userId: req.user?.id,
+      action: 'DELETE_HANDBOOK',
+      entityType: 'HANDBOOK',
+      entityId: id,
+      details: `Deleted handbook "${existing.title}"`,
+    });
+
+    res.json({ success: true, message: `Handbook "${existing.title}" deleted successfully.` });
+  } catch (err: any) {
+    console.error('Error deleting handbook:', err);
+    res.status(500).json({ error: 'Failed to delete handbook' });
+  }
+});
+
+// 7. Admin: View and search submitted client leads
+app.get('/api/admin/handbooks/leads', requireAuth, requireRole(['admin', 'editor']), async (req: AuthRequest, res: Response) => {
+  try {
+    const leads = dataStore.getHandbookLeads();
+    const q = ((req.query.q as string) || '').toLowerCase().trim();
+    const handbookFilter = (req.query.handbookId as string) || '';
+
+    let filtered = leads;
+    if (handbookFilter) {
+      filtered = filtered.filter((l) => l.handbookId === handbookFilter);
+    }
+    if (q) {
+      filtered = filtered.filter(
+        (l) =>
+          l.email.toLowerCase().includes(q) ||
+          l.mobileNumber.includes(q) ||
+          (l.fullName && l.fullName.toLowerCase().includes(q)) ||
+          l.handbookTitle.toLowerCase().includes(q)
+      );
+    }
+
+    res.json({
+      leads: filtered,
+      totalCount: leads.length,
+      filteredCount: filtered.length,
+    });
+  } catch (err: any) {
+    console.error('Error fetching handbook leads:', err);
+    res.status(500).json({ error: 'Failed to fetch handbook leads' });
+  }
+});
+
+// 8. Admin: Delete a client lead record
+app.delete('/api/admin/handbooks/leads/:id', requireAuth, requireRole(['admin']), async (req: AuthRequest, res: Response) => {
+  try {
+    const leadId = parseInt(req.params.id, 10);
+    const deleted = dataStore.deleteHandbookLead(leadId);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Lead record not found' });
+    }
+    res.json({ success: true, message: 'Lead record removed.' });
+  } catch (err: any) {
+    console.error('Error deleting lead:', err);
+    res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+// 9. Admin: Export client leads as CSV
+app.get('/api/admin/handbooks/leads/export', requireAuth, requireRole(['admin', 'editor']), async (_req: AuthRequest, res: Response) => {
+  try {
+    const leads = dataStore.getHandbookLeads();
+    const headers = ['ID', 'Full Name', 'Email', 'Mobile Number', 'Handbook Requested', 'Date & Time (UTC)', 'Status', 'IP Address'];
+    const rows = leads.map((l) => [
+      l.id,
+      `"${(l.fullName || '').replace(/"/g, '""')}"`,
+      `"${l.email.replace(/"/g, '""')}"`,
+      `"${l.mobileNumber.replace(/"/g, '""')}"`,
+      `"${l.handbookTitle.replace(/"/g, '""')}"`,
+      `"${l.createdAt}"`,
+      `"${l.status}"`,
+      `"${l.ipAddress || ''}"`,
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="Vastu-Ritam-Handbook-Leads-${Date.now()}.csv"`);
+    res.status(200).send(csvContent);
+  } catch (err: any) {
+    console.error('Error exporting leads CSV:', err);
+    res.status(500).json({ error: 'Failed to export leads' });
+  }
+});
+
+// -----------------------------------------------------------------------------
 // VITE DEV SERVER MIDDLEWARE & PRODUCTION SERVING
 // -----------------------------------------------------------------------------
 async function startServer() {
+  // Initialize default authentic handbook PDFs in protected storage if needed
+  initializeAllHandbookPdfs().catch((pdfErr) => {
+    console.warn('Initial handbook PDF generation notice:', pdfErr);
+  });
+
   // Ensure health check endpoint responds immediately for Cloud Run
   app.get('/health', (_req, res) => {
     res.status(200).send('OK');

@@ -169,6 +169,39 @@ export interface StoredAuditLog {
   createdAt: string;
 }
 
+export interface StoredHandbook {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  targetAudience: string;
+  pages: number;
+  topics: string[];
+  summary: string;
+  pdfFilePath?: string | null;
+  pdfFileName?: string | null;
+  pdfSizeBytes?: number | null;
+  status: 'published' | 'draft' | 'archived';
+  displayOrder: number;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredHandbookLead {
+  id: number;
+  handbookId: string;
+  handbookTitle: string;
+  fullName?: string;
+  email: string;
+  mobileNumber: string;
+  ipAddress?: string;
+  userAgent?: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface DataStoreState {
   articles: StoredArticle[];
   topics: StoredTopic[];
@@ -180,6 +213,8 @@ export interface DataStoreState {
   ads: StoredAd[];
   media: StoredMedia[];
   auditLogs: StoredAuditLog[];
+  handbooks: StoredHandbook[];
+  handbookLeads: StoredHandbookLead[];
 }
 
 class PersistentDataStore {
@@ -195,6 +230,14 @@ class PersistentDataStore {
         const raw = fs.readFileSync(DATA_STORE_PATH, 'utf-8');
         const parsed = JSON.parse(raw);
         if (parsed.articles && parsed.categories && parsed.settings) {
+          if (!parsed.handbooks || !Array.isArray(parsed.handbooks) || parsed.handbooks.length === 0) {
+            parsed.handbooks = this.generateInitialHandbooks();
+            this.saveToDisk(parsed);
+          }
+          if (!parsed.handbookLeads || !Array.isArray(parsed.handbookLeads)) {
+            parsed.handbookLeads = [];
+            this.saveToDisk(parsed);
+          }
           return parsed;
         }
       } catch (err) {
@@ -506,6 +549,8 @@ Each deity corresponds to a specific qualitative energy of nature. For instance,
       },
     ];
 
+    const handbooks = this.generateInitialHandbooks();
+
     return {
       articles,
       topics,
@@ -517,7 +562,87 @@ Each deity corresponds to a specific qualitative energy of nature. For instance,
       ads: [],
       media: [],
       auditLogs: [],
+      handbooks,
+      handbookLeads: [],
     };
+  }
+
+  private generateInitialHandbooks(): StoredHandbook[] {
+    const now = new Date().toISOString();
+    return [
+      {
+        id: '1',
+        slug: 'vastu-for-contemporary-architects',
+        title: 'Vastu for Contemporary Architects',
+        subtitle: 'A Field Guide to Seamless Integration with Modern CAD & BIM Workflows',
+        targetAudience: 'Architects & Urban Planners',
+        pages: 48,
+        topics: [
+          'Solar Vector Mapping',
+          'Brahmasthan in Multi-Story Apartments',
+          'Facade Openings vs Dik-Bala',
+          'Non-Destructive Layout Optimization',
+        ],
+        summary:
+          'Written specifically for registered architects who want to respect client Vastu sentiments while preserving aesthetic integrity and building code compliance.',
+        pdfFilePath: path.resolve(process.cwd(), 'protected_storage', 'handbooks', 'vastu-for-contemporary-architects-official-handbook.pdf'),
+        pdfFileName: 'vastu-for-contemporary-architects-official-handbook.pdf',
+        pdfSizeBytes: 9600,
+        status: 'published',
+        displayOrder: 1,
+        downloadCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: '2',
+        slug: 'homebuyers-vastu-checklist',
+        title: "The Informed Homebuyer's Vastu Checklist",
+        subtitle: 'What to Observe Before Signing Property Deeds',
+        targetAudience: 'Home Buyers & Real Estate Investors',
+        pages: 36,
+        topics: [
+          'Evaluating Main Entrance Pada',
+          'Slope & Drainage Verification',
+          'Surrounding Negative Structures',
+          'Separating Remediable Flaws from Critical Defects',
+        ],
+        summary:
+          'A transparent, easy-to-follow guide to protect your life savings from high-risk property purchases without being misled by sensationalist claims.',
+        pdfFilePath: path.resolve(process.cwd(), 'protected_storage', 'handbooks', 'homebuyers-vastu-checklist-official-handbook.pdf'),
+        pdfFileName: 'homebuyers-vastu-checklist-official-handbook.pdf',
+        pdfSizeBytes: 9500,
+        status: 'published',
+        displayOrder: 2,
+        downloadCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: '3',
+        slug: 'industrial-factory-spatial-harmonics',
+        title: 'Industrial & Factory Spatial Harmonics',
+        subtitle: 'Aligning Heavy Machinery, Substations, and Inventory Logistics',
+        targetAudience: 'Plant Managers & Civil Engineers',
+        pages: 54,
+        topics: [
+          'Earth-Bearing Capacity in Nairutya',
+          'Hazardous Chemical Storage in Agni',
+          'Raw Material Inflow vs Finished Goods Outflow',
+          'Workforce Well-being',
+        ],
+        summary:
+          'A practical technical treatise for manufacturing facilities, warehouse logistics, and corporate processing plants.',
+        pdfFilePath: path.resolve(process.cwd(), 'protected_storage', 'handbooks', 'industrial-factory-spatial-harmonics-official-handbook.pdf'),
+        pdfFileName: 'industrial-factory-spatial-harmonics-official-handbook.pdf',
+        pdfSizeBytes: 9000,
+        status: 'published',
+        displayOrder: 3,
+        downloadCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
   }
 
   private saveToDisk(stateToSave?: DataStoreState) {
@@ -1054,6 +1179,142 @@ Each deity corresponds to a specific qualitative energy of nature. For instance,
 
   createAuditLog(data: Partial<StoredAuditLog>): StoredAuditLog {
     return this.addAuditLog(data);
+  }
+
+  // --- Handbooks ---
+  getHandbooks(filterPublishedOnly = false): StoredHandbook[] {
+    if (!this.state.handbooks || !Array.isArray(this.state.handbooks)) {
+      this.state.handbooks = this.generateInitialHandbooks();
+      this.saveToDisk();
+    }
+    if (filterPublishedOnly) {
+      return this.state.handbooks.filter((h) => h.status === 'published');
+    }
+    return [...this.state.handbooks];
+  }
+
+  getHandbookById(id: string): StoredHandbook | undefined {
+    if (!this.state.handbooks || !Array.isArray(this.state.handbooks)) {
+      this.state.handbooks = this.generateInitialHandbooks();
+      this.saveToDisk();
+    }
+    return this.state.handbooks.find((h) => h.id === id || h.slug === id);
+  }
+
+  createHandbook(data: Partial<StoredHandbook>): StoredHandbook {
+    if (!this.state.handbooks) {
+      this.state.handbooks = [];
+    }
+    const nextId = String(Date.now());
+    const slug = (data.title || 'handbook')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    const now = new Date().toISOString();
+    const newHb: StoredHandbook = {
+      id: data.id || nextId,
+      slug: data.slug || slug,
+      title: data.title || 'Untitled Handbook',
+      subtitle: data.subtitle || '',
+      targetAudience: data.targetAudience || 'General Audience',
+      pages: Number(data.pages) || 40,
+      topics: Array.isArray(data.topics) ? data.topics : [],
+      summary: data.summary || '',
+      pdfFilePath: data.pdfFilePath || null,
+      pdfFileName: data.pdfFileName || null,
+      pdfSizeBytes: data.pdfSizeBytes || null,
+      status: data.status || 'published',
+      displayOrder: typeof data.displayOrder === 'number' ? data.displayOrder : this.state.handbooks.length + 1,
+      downloadCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.state.handbooks.push(newHb);
+    this.saveToDisk();
+    return newHb;
+  }
+
+  updateHandbook(id: string, data: Partial<StoredHandbook>): StoredHandbook | null {
+    if (!this.state.handbooks) {
+      this.state.handbooks = this.generateInitialHandbooks();
+    }
+    const index = this.state.handbooks.findIndex((h) => h.id === id || h.slug === id);
+    if (index === -1) return null;
+    const existing = this.state.handbooks[index];
+    const updated: StoredHandbook = {
+      ...existing,
+      ...data,
+      id: existing.id,
+      updatedAt: new Date().toISOString(),
+    };
+    this.state.handbooks[index] = updated;
+    this.saveToDisk();
+    return updated;
+  }
+
+  deleteHandbook(id: string): boolean {
+    if (!this.state.handbooks) return false;
+    const prevLen = this.state.handbooks.length;
+    this.state.handbooks = this.state.handbooks.filter((h) => h.id !== id && h.slug !== id);
+    if (this.state.handbooks.length !== prevLen) {
+      this.saveToDisk();
+      return true;
+    }
+    return false;
+  }
+
+  incrementHandbookDownload(id: string): void {
+    if (!this.state.handbooks) return;
+    const hb = this.state.handbooks.find((h) => h.id === id || h.slug === id);
+    if (hb) {
+      hb.downloadCount = (hb.downloadCount || 0) + 1;
+      this.saveToDisk();
+    }
+  }
+
+  // --- Handbook Leads ---
+  getHandbookLeads(): StoredHandbookLead[] {
+    if (!this.state.handbookLeads || !Array.isArray(this.state.handbookLeads)) {
+      this.state.handbookLeads = [];
+    }
+    return [...this.state.handbookLeads];
+  }
+
+  addHandbookLead(lead: Partial<StoredHandbookLead>): StoredHandbookLead {
+    if (!this.state.handbookLeads || !Array.isArray(this.state.handbookLeads)) {
+      this.state.handbookLeads = [];
+    }
+    const nextId = this.state.handbookLeads.length > 0
+      ? Math.max(...this.state.handbookLeads.map((l) => l.id)) + 1
+      : 1;
+    const now = new Date().toISOString();
+    const newLead: StoredHandbookLead = {
+      id: nextId,
+      handbookId: String(lead.handbookId || ''),
+      handbookTitle: String(lead.handbookTitle || ''),
+      fullName: lead.fullName?.trim() || undefined,
+      email: String(lead.email || '').trim().toLowerCase(),
+      mobileNumber: String(lead.mobileNumber || '').trim(),
+      ipAddress: lead.ipAddress,
+      userAgent: lead.userAgent,
+      status: lead.status || 'verified',
+      notes: lead.notes,
+      createdAt: now,
+    };
+    this.state.handbookLeads.unshift(newLead);
+    this.saveToDisk();
+    return newLead;
+  }
+
+  deleteHandbookLead(id: number): boolean {
+    if (!this.state.handbookLeads) return false;
+    const prevLen = this.state.handbookLeads.length;
+    this.state.handbookLeads = this.state.handbookLeads.filter((l) => l.id !== id);
+    if (this.state.handbookLeads.length !== prevLen) {
+      this.saveToDisk();
+      return true;
+    }
+    return false;
   }
 }
 

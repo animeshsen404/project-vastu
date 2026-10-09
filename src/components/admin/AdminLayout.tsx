@@ -21,6 +21,7 @@ import {
   KeyRound,
   Sun,
   Moon,
+  BookOpen,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
@@ -33,6 +34,7 @@ export type AdminTab =
   | 'categories'
   | 'keywords'
   | 'videos'
+  | 'handbooks'
   | 'ads'
   | 'media'
   | 'logo'
@@ -73,6 +75,7 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
   { id: 'categories', label: 'Categories', icon: FolderOpen },
   { id: 'keywords', label: 'Keywords & Shastric Terms', icon: Tag },
   { id: 'videos', label: 'Gyan Kosh: Video Learning', icon: Video },
+  { id: 'handbooks', label: 'Handbook Management', icon: BookOpen },
   { id: 'ads', label: 'Advertisement CMS', icon: Megaphone },
   { id: 'media', label: 'Media Library', icon: ImageIcon },
   { id: 'logo', label: 'Emblem & Logo Image', icon: ImageIcon },
